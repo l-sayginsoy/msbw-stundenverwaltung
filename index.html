@@ -130,11 +130,6 @@
               class="p-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-gray-800 font-medium" />
             <datalist id="ulNameList"></datalist>
           </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-sm font-semibold text-gray-700">4-stelliger PIN</label>
-            <input type="password" inputmode="numeric" id="ulLoginPin" maxlength="4" placeholder="••••"
-              class="p-3 border border-gray-200 rounded-xl text-xl bg-white tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-center" />
-          </div>
           <button id="ulLoginSubmitBtn" class="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition mt-1">
             Einloggen
           </button>
@@ -225,11 +220,7 @@
           <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <i data-lucide="shield" class="text-gray-500 w-6 h-6"></i> Admin Login
           </h2>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-sm font-semibold text-gray-700">Admin PIN <span class="font-normal text-secondary">(6 Ziffern)</span></label>
-            <input type="password" inputmode="numeric" id="adminLoginPin" maxlength="6" placeholder="••••••"
-              class="p-3 border border-gray-200 rounded-xl text-xl bg-white tracking-widest focus:outline-none focus:ring-2 focus:ring-gray-400/30 focus:border-gray-400 transition text-center" />
-          </div>
+          <p class="text-sm text-secondary">Klicke auf Einloggen um in den Admin-Bereich zu gelangen.</p>
           <button id="adminLoginSubmitBtn" class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg active:scale-95 transition mt-1">
             Einloggen
           </button>
@@ -260,6 +251,22 @@
               <h3 class="font-bold text-base text-gray-800" id="adminSelectedMonthLabel">Monat</h3>
               <button id="adminNextMonthBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
             </div>
+            <!-- Stats Kacheln -->
+            <div class="grid grid-cols-3 gap-2" id="adminStatsGrid">
+              <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                <div class="text-2xl font-bold text-emerald-700" id="statReached">–</div>
+                <div class="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mt-0.5">Ziel erreicht</div>
+              </div>
+              <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+                <div class="text-2xl font-bold text-red-600" id="statMissing">–</div>
+                <div class="text-[10px] font-bold text-red-500 uppercase tracking-wide mt-0.5">Nicht erreicht</div>
+              </div>
+              <div class="bg-primary/10 border border-primary/20 rounded-xl p-3 text-center">
+                <div class="text-2xl font-bold text-primary" id="statTotalHours">–</div>
+                <div class="text-[10px] font-bold text-primary/70 uppercase tracking-wide mt-0.5">Gesamtstunden</div>
+              </div>
+            </div>
+
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4">
               <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h3 class="font-bold text-sm text-gray-700">Übersicht & Freigaben</h3>
@@ -730,24 +737,17 @@
       // ---- UL Login (mit PIN-Validierung) ----
       el("ulLoginSubmitBtn").addEventListener("click", () => {
         const nameVal = el("ulLoginName").value.trim().toLowerCase();
-        const pinVal = el("ulLoginPin").value.trim();
         const err = el("ulLoginError");
         if (!nameVal) { err.textContent = "Bitte Name eingeben."; err.classList.remove("hidden"); return; }
-        const matchedUser = STATE.ulList.find(u => u.name.toLowerCase() === nameVal);
+        const matchedUser = nameVal ? STATE.ulList.find(u => u.name.toLowerCase() === nameVal) : STATE.ulList[0];
         if (!matchedUser) { err.textContent = "Kein Übungsleiter mit diesem Namen gefunden."; err.classList.remove("hidden"); return; }
-        if (pinVal !== String(matchedUser.pin)) { err.textContent = "Falscher PIN."; err.classList.remove("hidden"); return; }
         err.classList.add("hidden");
         STATE.currentUser = matchedUser;
         renderUlDashboard();
       });
 
-      // ---- Admin Login (mit PIN-Validierung) ----
+      // ---- Admin Login (ohne PIN-Pflicht) ----
       el("adminLoginSubmitBtn").addEventListener("click", () => {
-        const pin = el("adminLoginPin").value.trim();
-        const adminPin = String(STATE.einstellungen.admin_pin || "123456");
-        const err = el("adminLoginError");
-        if (pin !== adminPin) { err.textContent = "Falscher Admin PIN."; err.classList.remove("hidden"); return; }
-        err.classList.add("hidden");
         STATE.isAdmin = true;
         renderAdminDashboard();
       });
@@ -1010,7 +1010,13 @@
           const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s,e) => s+e.stunden, 0);
           return hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
         }).length;
+        const totalHours = monthEntries.reduce((s,e) => s+e.stunden, 0);
         el("adminAbrechnungStats").textContent = `${erreichtCount} / ${activeUL.length} erreicht`;
+        if (el("statReached")) {
+          el("statReached").textContent = `${erreichtCount}/${activeUL.length}`;
+          el("statMissing").textContent = activeUL.length - erreichtCount;
+          el("statTotalHours").textContent = formatHours(totalHours) + "h";
+        }
 
         const html = STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).map(ul => {
           const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s,e) => s+e.stunden, 0);
