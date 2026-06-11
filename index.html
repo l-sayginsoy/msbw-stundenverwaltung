@@ -998,13 +998,9 @@
       };
 
       // ---- Setup ----
-      // Setup entfernt — Einstellungen werden im Admin-Bereich verwaltet
-      if (false) { // dead code placeholder
-        const pin = "", stunden = 0, startMonat = 3, startJahr = 2026, seed = false;
-        await API.setEinstellungen({ admin_pin: pin, pflicht_stunden: stunden, start_monat: startMonat, start_jahr: startJahr });
-
-        if (seed) {
-          const echteUL = [
+      // Setup entfernt
+      if (false) {
+        const echteUL = [
             {name:"Abdoul Zampaligre", einrichtung:"BG Klinik Tübingen", pin:"4757"},
             {name:"Abdullah Göcmen", einrichtung:"Kliniken Landkreis Heidenheim gGmbH", pin:"9240"},
             {name:"Aicha Seddiki/Cheklal", einrichtung:"Universitätsklinikum Freiburg", pin:"5081"},
@@ -1060,9 +1056,7 @@
           }
         }
 
-        showNotification("Setup erfolgreich!");
-        initApp();
-      });
+      }
 
       // ---- Role Selection ----
       el("navUlLoginBtn").addEventListener("click", () => { el("ulLoginName").value = ""; el("ulLoginPin").value = ""; el("ulLoginError").classList.add("hidden"); switchView("ulLoginView"); });
