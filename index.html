@@ -129,106 +129,6 @@
           <span class="text-secondary text-sm">Lade Daten...</span>
         </div>
 
-        <!-- 1. Setup View -->
-        <div
-          id="setupView"
-          class="hidden flex-col gap-6 animate-fade-in my-6 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm"
-        >
-          <h2 class="text-2xl font-bold text-gray-800 border-b pb-2">
-            Erst-Setup
-          </h2>
-          <p class="text-sm text-secondary">
-            Willkommen! Bitte lege den Admin-PIN und die Grundeinstellungen fest.
-          </p>
-
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-gray-700">Admin PIN festlegen <span class="font-normal text-secondary">(6 Ziffern)</span></label>
-            <input
-              type="password"
-              inputmode="numeric"
-              id="setupAdminPin"
-              class="p-3 border border-gray-200 rounded-xl text-lg bg-white focus:outline-primary transition text-center tracking-widest"
-              maxlength="6"
-              placeholder="••••••"
-            />
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-gray-700">PIN bestätigen</label>
-            <input
-              type="password"
-              inputmode="numeric"
-              id="setupAdminPin2"
-              class="p-3 border border-gray-200 rounded-xl text-lg bg-white focus:outline-primary transition text-center tracking-widest"
-              maxlength="6"
-              placeholder="••••••"
-            />
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-gray-700">Monatliche Pflichtstunden pro Leiter</label>
-            <input
-              type="number"
-              id="setupPflichtStunden"
-              value="6.75"
-              step="0.25"
-              min="0.5"
-              max="40"
-              class="p-3 border border-gray-200 rounded-xl text-base bg-white focus:outline-primary transition"
-            />
-            <p class="text-xs text-secondary">z.B. 6.75 für 6 Stunden 45 Minuten</p>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-2">
-              <label class="text-sm font-semibold text-gray-700">Startmonat Fiskaljahr</label>
-              <select id="setupStartMonat" class="p-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-primary transition">
-                <option value="1">Januar</option><option value="2">Februar</option>
-                <option value="3" selected>März</option><option value="4">April</option>
-                <option value="5">Mai</option><option value="6">Juni</option>
-                <option value="7">Juli</option><option value="8">August</option>
-                <option value="9">September</option><option value="10">Oktober</option>
-                <option value="11">November</option><option value="12">Dezember</option>
-              </select>
-            </div>
-            <div class="flex flex-col gap-2">
-              <label class="text-sm font-semibold text-gray-700">Startjahr</label>
-              <input type="number" id="setupStartJahr" value="2026" min="2020" max="2040"
-                class="p-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-primary transition" />
-            </div>
-          </div>
-
-          <div
-            class="flex flex-col gap-2 bg-bglight p-4 rounded-xl border border-gray-100"
-          >
-            <label
-              class="text-sm font-semibold text-gray-700 flex items-center gap-2"
-            >
-              <input
-                type="checkbox"
-                id="setupSeedData"
-                class="w-4 h-4 text-primary rounded"
-                checked
-              />
-              Test-Daten (Ü-Leiter) generieren
-            </label>
-            <p class="text-xs text-secondary pl-6">
-              Erstellt automatisch ein paar Demo Übungsleiter zum Testen.
-            </p>
-          </div>
-
-          <button
-            id="setupSubmitBtn"
-            class="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition mt-2"
-          >
-            Setup abschließen
-          </button>
-          <div
-            id="setupError"
-            class="text-red-500 text-sm hidden font-medium text-center bg-red-50 p-2 rounded"
-          ></div>
-        </div>
-
         <!-- 2. Role Select View -->
         <div
           id="roleSelectView"
@@ -1056,7 +956,7 @@
       };
 
       const switchView = (viewId) => {
-        const views = ["loadingView","setupView","roleSelectView","ulLoginView","ulDashboardView","adminLoginView","adminDashboardView"];
+        const views = ["loadingView","roleSelectView","ulLoginView","ulDashboardView","adminLoginView","adminDashboardView"];
         views.forEach((v) => {
           const element = el(v);
           if (!element) return;
@@ -1078,8 +978,12 @@
 
       const initApp = async () => {
         STATE.einstellungen = await API.getEinstellungen();
-        if (!STATE.einstellungen) { switchView("setupView"); }
-        else { loadDataAndStart(); }
+        if (!STATE.einstellungen) {
+          // Standardwerte setzen falls keine Einstellungen vorhanden
+          STATE.einstellungen = { admin_pin: "123456", pflicht_stunden: 6.75, start_monat: 3, start_jahr: 2026 };
+          await API.setEinstellungen(STATE.einstellungen);
+        }
+        loadDataAndStart();
       };
 
       const loadDataAndStart = async () => {
@@ -1094,20 +998,9 @@
       };
 
       // ---- Setup ----
-      el("setupSubmitBtn").addEventListener("click", async () => {
-        const pin = el("setupAdminPin").value;
-        const pin2 = el("setupAdminPin2").value;
-        const stunden = parseFloat(el("setupPflichtStunden").value);
-        const startMonat = parseInt(el("setupStartMonat").value);
-        const startJahr = parseInt(el("setupStartJahr").value);
-        const seed = el("setupSeedData").checked;
-        const err = el("setupError");
-        err.classList.add("hidden");
-
-        if (!/^\d{6}$/.test(pin)) { err.textContent = "Admin-PIN muss exakt 6 Ziffern haben."; err.classList.remove("hidden"); return; }
-        if (pin !== pin2) { err.textContent = "Die PINs stimmen nicht überein."; err.classList.remove("hidden"); return; }
-        if (!stunden || stunden <= 0) { err.textContent = "Bitte eine gültige Stundenzahl eingeben."; err.classList.remove("hidden"); return; }
-
+      // Setup entfernt — Einstellungen werden im Admin-Bereich verwaltet
+      if (false) { // dead code placeholder
+        const pin = "", stunden = 0, startMonat = 3, startJahr = 2026, seed = false;
         await API.setEinstellungen({ admin_pin: pin, pflicht_stunden: stunden, start_monat: startMonat, start_jahr: startJahr });
 
         if (seed) {
