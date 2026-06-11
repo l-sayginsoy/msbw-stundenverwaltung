@@ -862,6 +862,9 @@
     </div>
 
     <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+      import { getDatabase, ref, get, set, push, update, remove, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
       const firebaseConfig = {
         apiKey: "AIzaSyA6_xNOj1hO7NwZIZBMrsGkxBWQccD-TU0",
         authDomain: "msbw-stundenverwaltung.firebaseapp.com",
@@ -875,6 +878,18 @@
       const USE_MOCK = window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1";
 
+      let fbdb = null;
+      if (!USE_MOCK) {
+        const app = initializeApp(firebaseConfig);
+        fbdb = getDatabase(app);
+      }
+
+      const fbGet = async (path) => { const snap = await get(ref(fbdb, path)); return snap.exists() ? snap.val() : null; };
+      const fbSet = async (path, val) => set(ref(fbdb, path), val);
+      const fbPush = async (path, val) => { const r = await push(ref(fbdb, path), val); return r.key; };
+      const fbUpdate = async (path, val) => update(ref(fbdb, path), val);
+      const fbRemove = async (path) => remove(ref(fbdb, path));
+
       let dbMockState = { einstellungen: null, uebungsleiter: {}, eintraege: {}, freigaben: {}, abschluesse: {} };
       if (USE_MOCK) {
         try { const s = localStorage.getItem("msbw_db"); if (s) dbMockState = JSON.parse(s); } catch (e) {}
@@ -883,20 +898,66 @@
       const generateId = () => Math.random().toString(36).substring(2, 10);
 
       const API = {
-        getEinstellungen: async () => { if (USE_MOCK) return dbMockState.einstellungen; return null; },
-        setEinstellungen: async (data) => { if (USE_MOCK) { dbMockState.einstellungen = data; saveMock(); return true; } },
-        getUebungsleiterList: async () => { if (USE_MOCK) return Object.entries(dbMockState.uebungsleiter).map(([id, data]) => ({ id, ...data })); return []; },
-        addUebungsleiter: async (data) => { const id = generateId(); if (USE_MOCK) { dbMockState.uebungsleiter[id] = data; saveMock(); return id; } },
-        updateUebungsleiter: async (id, data) => { if (USE_MOCK) { dbMockState.uebungsleiter[id] = { ...dbMockState.uebungsleiter[id], ...data }; saveMock(); return true; } },
-        deleteUebungsleiter: async (id) => { if (USE_MOCK) { delete dbMockState.uebungsleiter[id]; saveMock(); } },
-        getFreigaben: async () => { if (USE_MOCK) return dbMockState.freigaben || {}; return {}; },
-        setFreigabe: async (monat, userId, v) => { if (USE_MOCK) { if (!dbMockState.freigaben) dbMockState.freigaben = {}; if (!dbMockState.freigaben[monat]) dbMockState.freigaben[monat] = {}; dbMockState.freigaben[monat][userId] = v; saveMock(); return true; } },
-        getAbschluesse: async () => { if (USE_MOCK) return dbMockState.abschluesse || {}; return {}; },
-        setAbschluss: async (monat, userId, v) => { if (USE_MOCK) { if (!dbMockState.abschluesse) dbMockState.abschluesse = {}; if (!dbMockState.abschluesse[monat]) dbMockState.abschluesse[monat] = {}; dbMockState.abschluesse[monat][userId] = v; saveMock(); return true; } },
-        getEintraege: async () => { if (USE_MOCK) return Object.entries(dbMockState.eintraege).map(([id, data]) => ({ id, ...data })); return []; },
-        addEintrag: async (data) => { const id = generateId(); if (USE_MOCK) { dbMockState.eintraege[id] = data; saveMock(); return id; } },
-        updateEintrag: async (id, data) => { if (USE_MOCK) { dbMockState.eintraege[id] = { ...dbMockState.eintraege[id], ...data }; saveMock(); return true; } },
-        deleteEintrag: async (id) => { if (USE_MOCK) { delete dbMockState.eintraege[id]; saveMock(); return true; } },
+        getEinstellungen: async () => {
+          if (USE_MOCK) return dbMockState.einstellungen;
+          return fbGet("einstellungen");
+        },
+        setEinstellungen: async (data) => {
+          if (USE_MOCK) { dbMockState.einstellungen = data; saveMock(); return true; }
+          return fbSet("einstellungen", data);
+        },
+        getUebungsleiterList: async () => {
+          if (USE_MOCK) return Object.entries(dbMockState.uebungsleiter).map(([id, data]) => ({ id, ...data }));
+          const val = await fbGet("uebungsleiter");
+          return val ? Object.entries(val).map(([id, data]) => ({ id, ...data })) : [];
+        },
+        addUebungsleiter: async (data) => {
+          const id = generateId();
+          if (USE_MOCK) { dbMockState.uebungsleiter[id] = data; saveMock(); return id; }
+          await fbSet("uebungsleiter/" + id, data); return id;
+        },
+        updateUebungsleiter: async (id, data) => {
+          if (USE_MOCK) { dbMockState.uebungsleiter[id] = { ...dbMockState.uebungsleiter[id], ...data }; saveMock(); return true; }
+          return fbUpdate("uebungsleiter/" + id, data);
+        },
+        deleteUebungsleiter: async (id) => {
+          if (USE_MOCK) { delete dbMockState.uebungsleiter[id]; saveMock(); return; }
+          return fbRemove("uebungsleiter/" + id);
+        },
+        getFreigaben: async () => {
+          if (USE_MOCK) return dbMockState.freigaben || {};
+          return (await fbGet("freigaben")) || {};
+        },
+        setFreigabe: async (monat, userId, v) => {
+          if (USE_MOCK) { if (!dbMockState.freigaben) dbMockState.freigaben = {}; if (!dbMockState.freigaben[monat]) dbMockState.freigaben[monat] = {}; dbMockState.freigaben[monat][userId] = v; saveMock(); return true; }
+          return fbSet("freigaben/" + monat + "/" + userId, v);
+        },
+        getAbschluesse: async () => {
+          if (USE_MOCK) return dbMockState.abschluesse || {};
+          return (await fbGet("abschluesse")) || {};
+        },
+        setAbschluss: async (monat, userId, v) => {
+          if (USE_MOCK) { if (!dbMockState.abschluesse) dbMockState.abschluesse = {}; if (!dbMockState.abschluesse[monat]) dbMockState.abschluesse[monat] = {}; dbMockState.abschluesse[monat][userId] = v; saveMock(); return true; }
+          return fbSet("abschluesse/" + monat + "/" + userId, v);
+        },
+        getEintraege: async () => {
+          if (USE_MOCK) return Object.entries(dbMockState.eintraege).map(([id, data]) => ({ id, ...data }));
+          const val = await fbGet("eintraege");
+          return val ? Object.entries(val).map(([id, data]) => ({ id, ...data })) : [];
+        },
+        addEintrag: async (data) => {
+          const id = generateId();
+          if (USE_MOCK) { dbMockState.eintraege[id] = data; saveMock(); return id; }
+          await fbSet("eintraege/" + id, data); return id;
+        },
+        updateEintrag: async (id, data) => {
+          if (USE_MOCK) { dbMockState.eintraege[id] = { ...dbMockState.eintraege[id], ...data }; saveMock(); return true; }
+          return fbUpdate("eintraege/" + id, data);
+        },
+        deleteEintrag: async (id) => {
+          if (USE_MOCK) { delete dbMockState.eintraege[id]; saveMock(); return true; }
+          return fbRemove("eintraege/" + id);
+        },
       };
 
       const STATE = {
