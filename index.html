@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -18,99 +17,66 @@
               primary: "#2A9D8F",
               secondary: "#8A8A8A",
               bglight: "#F4F4F4",
-              bgdark: "#FFFFFF",
             },
           },
         },
       };
     </script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
-      body {
-        background-color: #1a1a1a;
-        color: #333333;
-        font-family: 'Inter', sans-serif;
-        -webkit-tap-highlight-color: transparent;
-      }
-      body.light-bg {
-        background-color: #f4f4f4;
-      }
-      .hidden {
-        display: none !important;
-      }
-      .animate-fade-in {
-        animation: fadeIn 0.3s ease-in-out;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(5px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .loader {
-        border: 3px solid #f3f3f3;
-        border-radius: 50%;
-        border-top: 3px solid #2a9d8f;
-        width: 24px;
-        height: 24px;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
+      body { background-color: #1a1a1a; color: #333; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+      body.light-bg { background-color: #f4f4f4; }
+      .hidden { display: none !important; }
+      .animate-fade-in { animation: fadeIn 0.25s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+      .loader { border: 3px solid #e5e7eb; border-radius: 50%; border-top-color: #2a9d8f; width: 24px; height: 24px; animation: spin 0.8s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
       .hide-scrollbar::-webkit-scrollbar { display: none; }
       .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      input[type="time"]::-webkit-calendar-picker-indicator { opacity: 0.4; }
+      .toast { transition: opacity 0.3s, transform 0.3s; }
     </style>
   </head>
   <body>
-    <div
-      id="app"
-      class="max-w-xl mx-auto min-h-screen bg-bglight flex flex-col shadow-2xl relative border-x border-gray-200"
-    >
-      <!-- Top Header -->
-      <header
-        class="bg-primary text-white px-6 py-5 flex justify-between items-center z-10 sticky top-0"
-      >
+    <div id="app" class="max-w-xl mx-auto min-h-screen bg-bglight flex flex-col shadow-2xl relative border-x border-gray-200">
+
+      <!-- Header -->
+      <header class="bg-primary text-white px-5 py-4 flex justify-between items-center z-10 sticky top-0 shadow-md">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
-            <img src="/public/Icon.png" alt="MSBW Logo" class="w-8 h-8 object-contain" />
+          <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+            <img src="/public/Icon.png" alt="MSBW" class="w-8 h-8 object-contain" />
           </div>
           <div>
-            <h1 class="text-xl font-semibold tracking-tight leading-tight">
-              MSBW
-            </h1>
-            <p class="text-base opacity-90 m-0 p-0">Stundenverwaltung</p>
+            <h1 class="text-lg font-bold tracking-tight leading-tight">MSBW</h1>
+            <p class="text-base opacity-90 leading-tight">Stundenverwaltung</p>
           </div>
         </div>
-        <button
-          id="logoutBtn"
-          class="hidden px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm transition-colors border border-white/20 font-medium"
-        >
-          Logout
+        <button id="logoutBtn" class="hidden px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg text-sm transition border border-white/20 font-medium flex items-center gap-1.5">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Logout
         </button>
       </header>
 
-      <!-- Bestätigungs-Modal für Monatsabschluss -->
-      <div id="confirmMonthModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full animate-fade-in">
+      <!-- Generic Confirm Modal -->
+      <div id="confirmModal" class="hidden fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-4 sm:pb-0">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-fade-in">
+          <p class="text-gray-800 font-semibold text-base mb-5" id="confirmModalMsg">Sicher?</p>
+          <div class="flex gap-3">
+            <button id="confirmModalCancel" class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition">Abbrechen</button>
+            <button id="confirmModalOk" class="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-black transition">Bestätigen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monat Abschließen Modal -->
+      <div id="confirmMonthModal" class="hidden fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-4 sm:pb-0">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-fade-in">
           <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
-              <i data-lucide="lock" class="w-5 h-5 text-red-500"></i>
+            <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+              <i data-lucide="lock" class="w-5 h-5 text-amber-600"></i>
             </div>
             <h3 class="text-lg font-bold text-gray-800">Monat abschließen?</h3>
           </div>
-          <p class="text-sm text-gray-600 mb-6" id="confirmMonthModalText">Möchtest du diesen Monat wirklich abschließen? Danach können keine Zeiten mehr bearbeitet werden.</p>
+          <p class="text-sm text-gray-600 mb-6" id="confirmMonthModalText">Danach können keine Zeiten mehr bearbeitet werden.</p>
           <div class="flex gap-3">
             <button id="confirmMonthCancel" class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition">Abbrechen</button>
             <button id="confirmMonthOk" class="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-black transition">Ja, abschließen</button>
@@ -118,754 +84,450 @@
         </div>
       </div>
 
-      <!-- Main Content Area -->
+      <!-- Toast Notification -->
+      <div id="toast" class="toast fixed bottom-5 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-xl shadow-xl text-sm font-semibold flex items-center gap-2 opacity-0 pointer-events-none max-w-xs text-center">
+        <i id="toastIcon" data-lucide="check-circle" class="w-4 h-4 shrink-0"></i>
+        <span id="toastMsg">Info</span>
+      </div>
+
+      <!-- Main Content -->
       <main class="flex-1 p-4 overflow-y-auto w-full relative" id="mainContent">
-        <!-- Loading Spinner -->
-        <div
-          id="loadingView"
-          class="flex flex-col items-center justify-center h-40 gap-3"
-        >
+
+        <!-- Loading -->
+        <div id="loadingView" class="flex flex-col items-center justify-center h-48 gap-3">
           <div class="loader"></div>
           <span class="text-secondary text-sm">Lade Daten...</span>
-          <div id="loadingError" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700 max-w-xs text-center"></div>
+          <div id="loadingError" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 max-w-xs text-center"></div>
         </div>
 
-        <!-- 2. Role Select View -->
-        <div
-          id="roleSelectView"
-          class="hidden flex-col gap-6 animate-fade-in my-10 px-2"
-        >
-          <h2 class="text-2xl font-bold text-center text-gray-800">
-            Login Bereich
-          </h2>
-          <p class="text-center text-secondary text-sm mb-2">
-            Bitte wähle deinen Zugang.
-          </p>
-
-          <button
-            id="navUlLoginBtn"
-            class="bg-white border-2 border-primary text-primary py-8 rounded-2xl shadow-sm hover:bg-primary hover:text-white transition flex flex-col items-center gap-3 group"
-          >
-            <div
-              class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-white/20 transition"
-            >
-              <i data-lucide="user" class="w-8 h-8"></i>
+        <!-- Role Select -->
+        <div id="roleSelectView" class="hidden flex-col gap-5 animate-fade-in my-8 px-2">
+          <div class="text-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">Willkommen</h2>
+            <p class="text-secondary text-sm mt-1">Bitte wähle deinen Zugang</p>
+          </div>
+          <button id="navUlLoginBtn" class="bg-white border-2 border-primary text-primary py-8 rounded-2xl shadow-sm hover:bg-primary hover:text-white transition-all flex flex-col items-center gap-3 group active:scale-[0.98]">
+            <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-white/20 transition">
+              <i data-lucide="user" class="w-7 h-7"></i>
             </div>
             <span class="text-xl font-bold">Übungsleiter/in</span>
           </button>
-
-          <button
-            id="navAdminLoginBtn"
-            class="bg-white border border-gray-200 text-gray-600 py-4 rounded-xl shadow-sm hover:bg-gray-50 transition mt-4 flex items-center justify-center gap-2"
-          >
-            <i data-lucide="shield" class="w-5 h-5"></i>
-            <span class="font-medium">Admin Zugang</span>
+          <button id="navAdminLoginBtn" class="bg-white border border-gray-200 text-gray-600 py-4 rounded-xl shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-2 active:scale-[0.98]">
+            <i data-lucide="shield" class="w-4 h-4"></i>
+            <span class="font-medium text-sm">Admin Zugang</span>
           </button>
         </div>
 
-        <!-- 3. Ü-Leiter Login View -->
-        <div
-          id="ulLoginView"
-          class="hidden flex-col gap-5 animate-fade-in my-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm"
-        >
-          <button
-            id="backToRoleFromUlBtn"
-            class="text-secondary flex items-center gap-1 text-sm hover:text-primary self-start transition"
-          >
+        <!-- UL Login -->
+        <div id="ulLoginView" class="hidden flex-col gap-5 animate-fade-in my-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
+          <button id="backToRoleFromUlBtn" class="text-secondary flex items-center gap-1 text-sm hover:text-primary self-start transition">
             <i data-lucide="arrow-left" class="w-4 h-4"></i> Zurück
           </button>
           <h2 class="text-2xl font-bold text-gray-800">Übungsleiter Login</h2>
-
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-1.5">
             <label class="text-sm font-semibold text-gray-700">Vor- und Nachname</label>
-            <input
-              type="text"
-              id="ulLoginName"
-              placeholder="z.B. Max Mustermann"
-              class="p-3 border border-gray-200 rounded-xl bg-white focus:outline-primary transition text-gray-800 font-medium"
-            />
+            <input type="text" id="ulLoginName" list="ulNameList" placeholder="z.B. Max Mustermann" autocomplete="off"
+              class="p-3 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-gray-800 font-medium" />
+            <datalist id="ulNameList"></datalist>
           </div>
-
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-gray-700"
-              >Dein 4-stelliger PIN</label
-            >
-            <input
-              type="password"
-              inputmode="numeric"
-              id="ulLoginPin"
-              class="p-3 border border-gray-200 rounded-xl text-lg bg-white tracking-widest focus:outline-primary transition text-center"
-              maxlength="4"
-              placeholder="••••"
-            />
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-semibold text-gray-700">4-stelliger PIN</label>
+            <input type="password" inputmode="numeric" id="ulLoginPin" maxlength="4" placeholder="••••"
+              class="p-3 border border-gray-200 rounded-xl text-xl bg-white tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-center" />
           </div>
-
-          <button
-            id="ulLoginSubmitBtn"
-            class="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition mt-2"
-          >
+          <button id="ulLoginSubmitBtn" class="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition mt-1">
             Einloggen
           </button>
-          <div
-            id="ulLoginError"
-            class="text-red-500 text-sm hidden bg-red-50 p-2 rounded border border-red-100 font-medium text-center"
-          ></div>
+          <div id="ulLoginError" class="text-red-600 text-sm hidden bg-red-50 p-3 rounded-xl border border-red-100 font-medium text-center"></div>
         </div>
 
-        <!-- 4. Ü-Leiter Dashboard View -->
-        <div
-          id="ulDashboardView"
-          class="hidden flex-col gap-6 animate-fade-in my-2 p-2"
-        >
-          <!-- Welcome Header -->
-          <div class="mb-4">
-            <h2 class="text-2xl font-bold text-gray-800 tracking-tight" id="ulDashName">
-              Max Mustermann
-            </h2>
-            <p class="text-lg font-medium text-gray-500" id="ulDashEinrichtung">
-              Krankenhaus XY
-            </p>
+        <!-- UL Dashboard -->
+        <div id="ulDashboardView" class="hidden flex-col gap-5 animate-fade-in my-2 px-1">
+
+          <!-- User Info -->
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800 tracking-tight" id="ulDashName">Name</h2>
+              <p class="text-base font-medium text-gray-500" id="ulDashEinrichtung">Einrichtung</p>
+            </div>
           </div>
 
-          <!-- Progress Widget -->
-          <div class="bg-bglight p-5 rounded-2xl mb-4">
-            <div class="flex justify-between items-end mb-2">
-              <span
-                class="text-2xl font-bold text-primary"
-                id="ulDashHoursCount"
-                >0
-                <span class="text-lg text-gray-400 font-normal ml-0.5"
-                  >/ 0h</span
-                ></span
-              >
-              <span
-                class="text-base text-primary font-extrabold uppercase tracking-widest"
-                id="ulDashMonthStatus"
-                >Monat</span
-              >
-            </div>
-            <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-              <div
-                id="ulDashProgressBar"
-                class="bg-primary h-full w-[0%] transition-all duration-500"
-              ></div>
-            </div>
-            <p
-              class="text-sm mt-3 text-secondary font-medium"
-              id="ulDashGoalMsg"
-            >
-              Noch X Stunden bis zum Pflichtziel
-            </p>
-          </div>
-
-          <!-- Add Entry Form -->
-          <div class="space-y-4 mb-4 px-1" id="ulAddEntryBlock">
-            <label
-              class="text-sm uppercase font-bold text-secondary tracking-widest flex justify-between items-center"
-            >
-              <span>Eintrag hinzufügen</span>
-              <span
-                id="newEntryPreview"
-                class="text-primary font-bold text-sm bg-bglight px-2 py-0.5 rounded"
-                >0.0h</span
-              >
-            </label>
-            <div class="grid grid-cols-2 gap-3">
-              <input
-                type="date"
-                id="newEntryDatum"
-                class="col-span-2 p-3 border border-gray-200 rounded-lg text-base bg-white focus:outline-primary transition"
-              />
-              <div class="relative mt-2">
-                <span
-                  class="absolute top-1.5 left-3 text-xs font-bold text-secondary uppercase"
-                  >Von</span
-                >
-                <input
-                  type="time"
-                  id="newEntryVon"
-                  class="w-full pt-6 pb-2 px-3 border border-gray-200 rounded-lg text-lg font-medium bg-white focus:outline-primary transition"
-                />
-              </div>
-              <div class="relative mt-2">
-                <span
-                  class="absolute top-1.5 left-3 text-xs font-bold text-secondary uppercase"
-                  >Bis</span
-                >
-                <input
-                  type="time"
-                  id="newEntryBis"
-                  class="w-full pt-6 pb-2 px-3 border border-gray-200 rounded-lg text-lg font-medium bg-white focus:outline-primary transition"
-                />
-              </div>
-            </div>
-            <button
-              id="addEntryBtn"
-              class="w-full py-4 text-lg mt-2 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex justify-center items-center gap-2"
-            >
-              Eintrag speichern
+          <!-- Month Navigation -->
+          <div class="flex items-center justify-between bg-white rounded-xl border border-gray-100 shadow-sm px-2 py-1.5">
+            <button id="ulPrevMonthBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition">
+              <i data-lucide="chevron-left" class="w-5 h-5"></i>
             </button>
-            <div
-              id="addEntryMsg"
-              class="text-sm font-medium hidden text-center"
-            ></div>
+            <span class="font-bold text-gray-800 text-sm" id="ulDashMonthStatus">Monat</span>
+            <button id="ulNextMonthBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition">
+              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
           </div>
 
-          <!-- Month closed notice -->
-          <div id="ulMonthClosedNotice" class="hidden bg-gray-100 border border-gray-200 rounded-xl p-4 text-center text-sm text-secondary flex items-center justify-center gap-2 mb-4">
+          <!-- Progress -->
+          <div class="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-2xl font-bold text-primary" id="ulDashHoursCount">0 <span class="text-lg text-gray-400 font-normal">/ 0h</span></span>
+              <span class="text-xs font-bold text-secondary uppercase tracking-widest" id="ulDashGoalPct">0%</span>
+            </div>
+            <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+              <div id="ulDashProgressBar" class="bg-primary h-full rounded-full transition-all duration-500 w-0"></div>
+            </div>
+            <p class="text-sm mt-3 text-secondary font-medium" id="ulDashGoalMsg">Noch X Stunden bis zum Pflichtziel</p>
+          </div>
+
+          <!-- Add Entry -->
+          <div id="ulAddEntryBlock" class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs uppercase font-bold text-secondary tracking-widest">Eintrag hinzufügen</span>
+              <span id="newEntryPreview" class="text-primary font-bold text-sm bg-primary/10 px-2.5 py-0.5 rounded-lg">0.0h</span>
+            </div>
+            <input type="date" id="newEntryDatum" class="w-full p-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+            <div class="grid grid-cols-2 gap-3">
+              <div class="relative">
+                <span class="absolute top-2 left-3 text-[10px] font-bold text-secondary uppercase tracking-wide">Von</span>
+                <input type="time" id="newEntryVon" class="w-full pt-6 pb-2.5 px-3 border border-gray-200 rounded-xl text-lg font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+              </div>
+              <div class="relative">
+                <span class="absolute top-2 left-3 text-[10px] font-bold text-secondary uppercase tracking-wide">Bis</span>
+                <input type="time" id="newEntryBis" class="w-full pt-6 pb-2.5 px-3 border border-gray-200 rounded-xl text-lg font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+              </div>
+            </div>
+            <button id="addEntryBtn" class="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-md shadow-primary/20 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed flex justify-center items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> Eintrag speichern
+            </button>
+          </div>
+
+          <!-- Month Closed Notice -->
+          <div id="ulMonthClosedNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-center text-sm text-amber-700 flex items-center justify-center gap-2">
             <i data-lucide="lock" class="w-4 h-4"></i> Dieser Monat wurde abgeschlossen.
           </div>
 
-          <!-- Recent Entries -->
-          <div class="flex-1 overflow-hidden px-1">
-            <p
-              class="uppercase font-bold text-secondary tracking-widest mb-4 flex justify-between items-center"
-            >
-              <span class="text-sm">Letzte Einträge</span>
-              <span class="text-sm text-secondary font-bold uppercase tracking-widest" id="ulDashListMonthLabel"></span>
-            </p>
-            <div id="ulEntriesList" class="space-y-3 mb-4">
-              <div
-                class="text-center text-sm text-secondary p-4 bg-bglight rounded-xl"
-              >
-                Keine Einträge in diesem Monat.
-              </div>
+          <!-- Entries List -->
+          <div>
+            <div class="flex justify-between items-center mb-3 px-1">
+              <span class="text-xs uppercase font-bold text-secondary tracking-widest">Einträge</span>
+              <span class="text-xs text-secondary" id="ulEntriesCount"></span>
             </div>
+            <div id="ulEntriesList" class="space-y-2 mb-4"></div>
 
-            <button
-              id="ulSubmitMonthBtn"
-              class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-black active:scale-95 transition-transform flex justify-center items-center gap-2 mt-4"
-            >
+            <button id="ulSubmitMonthBtn" class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-black active:scale-95 transition flex justify-center items-center gap-2 mt-2">
               <i data-lucide="lock" class="w-4 h-4"></i> Monat abschließen
             </button>
-            <p class="text-xs text-secondary mt-2 text-center">
-              Nach dem Abschluss können keine Zeiten mehr für diesen Monat
-              bearbeitet werden.
-            </p>
+            <p class="text-xs text-secondary mt-2 text-center" id="ulSubmitHint">Nach dem Abschluss können keine Zeiten mehr bearbeitet werden.</p>
           </div>
         </div>
 
-        <!-- 5. Admin Login View -->
-        <div
-          id="adminLoginView"
-          class="hidden flex-col gap-5 animate-fade-in my-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm"
-        >
-          <button
-            id="backToRoleFromAdminBtn"
-            class="text-secondary flex items-center gap-1 text-sm hover:text-gray-800 self-start transition"
-          >
+        <!-- Admin Login -->
+        <div id="adminLoginView" class="hidden flex-col gap-5 animate-fade-in my-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
+          <button id="backToRoleFromAdminBtn" class="text-secondary flex items-center gap-1 text-sm hover:text-gray-800 self-start transition">
             <i data-lucide="arrow-left" class="w-4 h-4"></i> Zurück
           </button>
           <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <i data-lucide="shield" class="text-gray-500 w-6 h-6"></i> Admin
-            Login
+            <i data-lucide="shield" class="text-gray-500 w-6 h-6"></i> Admin Login
           </h2>
-
-          <div class="flex flex-col gap-2">
+          <div class="flex flex-col gap-1.5">
             <label class="text-sm font-semibold text-gray-700">Admin PIN <span class="font-normal text-secondary">(6 Ziffern)</span></label>
-            <input
-              type="password"
-              inputmode="numeric"
-              id="adminLoginPin"
-              class="p-3 border border-gray-200 rounded-xl text-lg bg-white tracking-widest focus:outline-gray-400 transition text-center"
-              maxlength="6"
-              placeholder="••••••"
-            />
+            <input type="password" inputmode="numeric" id="adminLoginPin" maxlength="6" placeholder="••••••"
+              class="p-3 border border-gray-200 rounded-xl text-xl bg-white tracking-widest focus:outline-none focus:ring-2 focus:ring-gray-400/30 focus:border-gray-400 transition text-center" />
           </div>
-
-          <button
-            id="adminLoginSubmitBtn"
-            class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg shadow-gray-900/20 active:scale-95 transition mt-2"
-          >
+          <button id="adminLoginSubmitBtn" class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg active:scale-95 transition mt-1">
             Einloggen
           </button>
-          <div
-            id="adminLoginError"
-            class="text-red-500 text-sm hidden font-medium text-center bg-red-50 p-2 rounded"
-          ></div>
+          <div id="adminLoginError" class="text-red-600 text-sm hidden bg-red-50 p-3 rounded-xl font-medium text-center border border-red-100"></div>
         </div>
 
-        <!-- 6. Admin Dashboard View -->
-        <div
-          id="adminDashboardView"
-          class="hidden flex-col gap-4 animate-fade-in my-2 px-2 lg:px-6"
-        >
-          <!-- Tabs Navigation -->
-          <div
-            class="px-2 pt-2 border-b border-gray-200 text-sm flex overflow-x-auto hide-scrollbar"
-          >
-            <button
-              onclick="window.switchAdminTab('abrechnung')"
-              id="tabBtn-abrechnung"
-              class="admin-tab-btn px-4 py-3 font-bold text-primary border-b-2 border-primary whitespace-nowrap outline-none transition-colors"
-            >
-              Abrechnung Monat
-            </button>
-            <button
-              onclick="window.switchAdminTab('lohn')"
-              id="tabBtn-lohn"
-              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors"
-            >
-              Lohnbuchhaltung
-            </button>
-            <button
-              onclick="window.switchAdminTab('jahr')"
-              id="tabBtn-jahr"
-              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors"
-            >
-              Jahresübersicht
-            </button>
-            <button
-              onclick="window.switchAdminTab('verwaltung')"
-              id="tabBtn-verwaltung"
-              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors"
-            >
-              Ü-Leiter verwalten
-            </button>
+        <!-- Admin Dashboard -->
+        <div id="adminDashboardView" class="hidden flex-col gap-4 animate-fade-in my-2 px-1 lg:px-4">
+          <!-- Tabs -->
+          <div class="border-b border-gray-200 flex overflow-x-auto hide-scrollbar -mx-1">
+            <button onclick="window.switchAdminTab('abrechnung')" id="tabBtn-abrechnung" class="admin-tab-btn px-4 py-3 text-sm font-bold text-primary border-b-2 border-primary whitespace-nowrap outline-none">Abrechnung</button>
+            <button onclick="window.switchAdminTab('lohn')" id="tabBtn-lohn" class="admin-tab-btn px-4 py-3 text-sm font-medium text-gray-400 border-b-2 border-transparent whitespace-nowrap outline-none hover:text-gray-700">Lohn</button>
+            <button onclick="window.switchAdminTab('jahr')" id="tabBtn-jahr" class="admin-tab-btn px-4 py-3 text-sm font-medium text-gray-400 border-b-2 border-transparent whitespace-nowrap outline-none hover:text-gray-700">Jahresübersicht</button>
+            <button onclick="window.switchAdminTab('verwaltung')" id="tabBtn-verwaltung" class="admin-tab-btn px-4 py-3 text-sm font-medium text-gray-400 border-b-2 border-transparent whitespace-nowrap outline-none hover:text-gray-700">ÜL verwalten</button>
+            <button onclick="window.switchAdminTab('einstellungen')" id="tabBtn-einstellungen" class="admin-tab-btn px-4 py-3 text-sm font-medium text-gray-400 border-b-2 border-transparent whitespace-nowrap outline-none hover:text-gray-700">Einstellungen</button>
           </div>
 
-          <!-- Tab 1: Abrechnung -->
+          <!-- Tab: Abrechnung -->
           <div id="adminTab-abrechnung" class="flex flex-col gap-4">
-            <div class="flex justify-between items-center px-1 mt-2">
+            <div class="flex justify-between items-center px-1">
               <h3 class="font-bold text-lg text-gray-800">Abrechnung</h3>
-              <button
-                id="adminAddEntryBtn"
-                class="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
-              >
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Eintrag hinzufügen
+              <button id="adminAddEntryBtn" class="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs rounded-lg shadow-sm hover:opacity-90 transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Eintrag
               </button>
             </div>
-
-            <div
-              class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"
-            >
-              <button
-                id="adminPrevMonthBtn"
-                class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition"
-              >
-                <i data-lucide="chevron-left" class="w-5 h-5"></i>
-              </button>
-              <h3
-                class="font-bold text-lg text-gray-800"
-                id="adminSelectedMonthLabel"
-              >
-                Juni 2026
-              </h3>
-              <button
-                id="adminNextMonthBtn"
-                class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition"
-              >
-                <i data-lucide="chevron-right" class="w-5 h-5"></i>
-              </button>
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+              <button id="adminPrevMonthBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+              <h3 class="font-bold text-base text-gray-800" id="adminSelectedMonthLabel">Monat</h3>
+              <button id="adminNextMonthBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
             </div>
-
-            <div
-              class="bg-white rounded-2xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col mb-4"
-            >
-              <div
-                class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
-              >
-                <h3 class="font-bold text-sm text-gray-800">
-                  Übersicht & Freigaben
-                </h3>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+              <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 class="font-bold text-sm text-gray-700">Übersicht & Freigaben</h3>
+                <span id="adminAbrechnungStats" class="text-xs text-secondary"></span>
               </div>
-              <div
-                id="adminUsersList"
-                class="flex flex-col bg-white divide-y divide-gray-100"
-              >
-              </div>
+              <div id="adminUsersList" class="flex flex-col divide-y divide-gray-50"></div>
             </div>
           </div>
 
-          <!-- Tab 2: Lohnbuchhaltung -->
+          <!-- Tab: Lohn -->
           <div id="adminTab-lohn" class="hidden flex-col gap-4">
-            <div class="flex justify-between items-center px-1 mt-2">
+            <div class="flex justify-between items-center px-1">
               <h3 class="font-bold text-lg text-gray-800">Lohnbuchhaltung</h3>
               <div class="flex gap-2">
-                <button
-                  id="exportCsvBtnLohn"
-                  class="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
-                >
-                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Lohn
+                <button id="exportCsvBtnLohn" class="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs rounded-lg shadow-sm hover:opacity-90 transition">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Lohn CSV
                 </button>
-                <button
-                  id="exportCsvBtnAlle"
-                  class="flex items-center gap-1 px-3 py-1.5 bg-gray-500 text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
-                >
-                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Alle (CSV)
+                <button id="exportCsvBtnAlle" class="flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white text-xs rounded-lg shadow-sm hover:opacity-90 transition">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Alle CSV
                 </button>
               </div>
             </div>
-
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-              <button id="adminLohnPrevBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
-                <i data-lucide="chevron-left" class="w-5 h-5"></i>
-              </button>
-              <h3 class="font-bold text-lg text-gray-800" id="adminLohnMonthLabel">Juni 2026</h3>
-              <button id="adminLohnNextBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
-                <i data-lucide="chevron-right" class="w-5 h-5"></i>
-              </button>
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+              <button id="adminLohnPrevBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+              <h3 class="font-bold text-base text-gray-800" id="adminLohnMonthLabel">Monat</h3>
+              <button id="adminLohnNextBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
             </div>
-
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col mb-4">
-              <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
-                <p class="text-xs text-secondary"><strong>Export Lohn:</strong> Nur Trainer mit Ziel erreicht oder Kulanz gewährt. Spalten: Vorname; Name; Klinik; Gesamtstunden; Auszahlung</p>
-                <p class="text-xs text-secondary mt-1"><strong>Alle (CSV):</strong> Alle Trainer. Spalten: Einrichtung; Vorname; Name; Status; Gesamtstunden</p>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+              <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50 space-y-1">
+                <p class="text-xs text-secondary"><strong>Lohn CSV:</strong> Nur Trainer mit Ziel oder Zugeständnis — Vorname; Name; Klinik; Stunden; Auszahlung</p>
+                <p class="text-xs text-secondary"><strong>Alle CSV:</strong> Alle Trainer — Einrichtung; Vorname; Name; Status; Stunden</p>
               </div>
-              <div id="lohnUsersList" class="flex flex-col bg-white divide-y divide-gray-100"></div>
+              <div id="lohnUsersList" class="flex flex-col divide-y divide-gray-50"></div>
             </div>
           </div>
 
-          <!-- Tab 3: Jahresübersicht -->
+          <!-- Tab: Jahresübersicht -->
           <div id="adminTab-jahr" class="hidden flex-col gap-4">
-            <div class="flex justify-between items-center px-1 mt-2">
+            <div class="flex justify-between items-center px-1">
               <h3 class="font-bold text-lg text-gray-800">Jahresübersicht</h3>
-              <button
-                id="exportCsvBtnJahr"
-                class="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
-              >
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> Jahr Export
+              <button id="exportCsvBtnJahr" class="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg shadow-sm hover:opacity-90 transition">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Export
               </button>
             </div>
-
-            <div
-              class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"
-            >
-              <button
-                id="adminPrevYearBtn"
-                class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition"
-              >
-                <i data-lucide="chevron-left" class="w-5 h-5"></i>
-              </button>
-              <h3
-                class="font-bold text-lg text-gray-800"
-                id="adminSelectedYearLabel"
-              >
-                März 2026 - Februar 2027
-              </h3>
-              <button
-                id="adminNextYearBtn"
-                class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition"
-              >
-                <i data-lucide="chevron-right" class="w-5 h-5"></i>
-              </button>
+            <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+              <button id="adminPrevYearBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+              <h3 class="font-bold text-sm text-gray-800" id="adminSelectedYearLabel">Zeitraum</h3>
+              <button id="adminNextYearBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-500 transition"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
             </div>
-
-            <div
-              class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto pb-2 mb-4 hide-scrollbar"
-            >
-              <table
-                class="w-full text-left text-xs whitespace-nowrap"
-              >
-                <thead>
-                  <tr
-                    class="bg-gray-50 text-gray-500 uppercase font-bold border-b border-gray-100"
-                    id="jahrTableHead"
-                  >
-                    <th
-                      class="p-3 sticky left-0 bg-gray-50 z-10 border-r border-gray-100 w-32"
-                    >
-                      Name
-                    </th>
-                  </tr>
-                </thead>
-                <tbody
-                  id="jahrTableBody"
-                  class="divide-y divide-gray-100"
-                ></tbody>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto pb-2 mb-4 hide-scrollbar">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-gray-50 text-gray-500 uppercase font-bold border-b border-gray-100" id="jahrTableHead"><th class="p-3 sticky left-0 bg-gray-50 z-10 border-r border-gray-100 min-w-[150px]">Name</th></tr></thead>
+                <tbody id="jahrTableBody" class="divide-y divide-gray-100"></tbody>
               </table>
             </div>
           </div>
 
-          <!-- Tab 4: Ü-Leiter Verwaltung -->
+          <!-- Tab: ÜL Verwaltung -->
           <div id="adminTab-verwaltung" class="hidden flex-col gap-4 mb-4">
-            <div class="flex justify-between items-center px-1 mt-2">
+            <div class="flex justify-between items-center px-1">
               <h3 class="font-bold text-lg text-gray-800">Übungsleiter</h3>
-              <button
-                onclick="window.adminEditUser('')"
-                class="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
-              >
+              <button onclick="window.adminEditUser('')" class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg shadow-sm hover:opacity-90 transition">
                 <i data-lucide="plus" class="w-3.5 h-3.5"></i> Neu anlegen
               </button>
             </div>
-
-            <div
-              class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col divide-y divide-gray-100"
-              id="adminVerwaltungList"
-            >
+            <div class="mb-2 px-1">
+              <input type="text" id="verwaltungSearch" placeholder="Suchen..." class="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
             </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col divide-y divide-gray-100" id="adminVerwaltungList"></div>
+          </div>
+
+          <!-- Tab: Einstellungen -->
+          <div id="adminTab-einstellungen" class="hidden flex-col gap-4 mb-4">
+            <div class="px-1">
+              <h3 class="font-bold text-lg text-gray-800">Einstellungen</h3>
+              <p class="text-sm text-secondary mt-0.5">Systemkonfiguration und Zugangsdaten</p>
+            </div>
+
+            <!-- Arbeitszeitkonto -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div class="px-4 py-3 bg-gray-50/50 border-b border-gray-100">
+                <h4 class="font-bold text-sm text-gray-700 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-primary"></i> Arbeitszeitkonto</h4>
+              </div>
+              <div class="p-4 space-y-4">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-semibold text-gray-700">Pflichtstunden pro Monat</label>
+                  <div class="flex items-center gap-2">
+                    <input type="number" id="settingsPflichtStunden" step="0.25" min="1" max="50" class="w-28 p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-center font-bold" />
+                    <span class="text-sm text-secondary">Stunden / Monat</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-gray-700">Startmonat (Geschäftsjahr)</label>
+                    <select id="settingsStartMonat" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition">
+                      <option value="1">Januar</option><option value="2">Februar</option><option value="3">März</option>
+                      <option value="4">April</option><option value="5">Mai</option><option value="6">Juni</option>
+                      <option value="7">Juli</option><option value="8">August</option><option value="9">September</option>
+                      <option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option>
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-xs font-semibold text-gray-700">Startjahr</label>
+                    <input type="number" id="settingsStartJahr" min="2020" max="2035" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-center" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Zugangsdaten -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div class="px-4 py-3 bg-gray-50/50 border-b border-gray-100">
+                <h4 class="font-bold text-sm text-gray-700 flex items-center gap-2"><i data-lucide="key-round" class="w-4 h-4 text-primary"></i> Admin Zugangsdaten</h4>
+              </div>
+              <div class="p-4 space-y-4">
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-semibold text-gray-700">Aktueller Admin PIN</label>
+                  <input type="password" inputmode="numeric" id="settingsCurrentPin" maxlength="6" placeholder="Aktueller PIN eingeben"
+                    class="w-full p-2.5 border border-gray-200 rounded-xl text-sm tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-xs font-semibold text-gray-700">Neuer Admin PIN <span class="font-normal text-secondary">(6 Ziffern)</span></label>
+                  <input type="password" inputmode="numeric" id="settingsNewPin" maxlength="6" placeholder="Neuer PIN (leer lassen = nicht ändern)"
+                    class="w-full p-2.5 border border-gray-200 rounded-xl text-sm tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
+                </div>
+              </div>
+            </div>
+
+            <div id="settingsErrorMsg" class="hidden p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 text-center"></div>
+
+            <button id="settingsSaveBtn" class="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-md shadow-primary/20 active:scale-95 transition flex items-center justify-center gap-2">
+              <i data-lucide="save" class="w-4 h-4"></i> Einstellungen speichern
+            </button>
           </div>
         </div>
 
-        <!-- Entry Edit Modal -->
-        <div
-          id="entryEditModal"
-          class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4"
-        >
-          <div
-            class="bg-white rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10"
-          >
-            <div
-              class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50"
-            >
-              <h3 class="font-bold text-lg text-gray-800">
-                Eintrag bearbeiten
-              </h3>
-              <button
-                onclick="window.closeEntryModal()"
-                class="text-gray-400 hover:text-gray-800 transition"
-              >
-                <i data-lucide="x" class="w-5 h-5"></i>
-              </button>
+        <!-- Entry Edit Modal (UL + Admin) -->
+        <div id="entryEditModal" class="hidden fixed inset-0 z-[100] bg-black/50 flex items-end sm:items-center justify-center p-4">
+          <div class="bg-white rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 class="font-bold text-base text-gray-800">Eintrag bearbeiten</h3>
+              <button onclick="window.closeEntryModal()" class="text-gray-400 hover:text-gray-800 transition p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            <div class="p-5 flex flex-col gap-4 overflow-y-auto">
+            <div class="p-5 flex flex-col gap-4">
               <input type="hidden" id="entryModalId" />
               <div>
-                <label class="text-xs font-semibold text-gray-700">Datum</label>
-                <input
-                  type="date"
-                  id="entryModalDatum"
-                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
-                />
+                <label class="text-xs font-semibold text-gray-600 mb-1 block">Datum</label>
+                <input type="date" id="entryModalDatum" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="text-xs font-semibold text-gray-700">Von</label>
-                  <input
-                    type="time"
-                    id="entryModalVon"
-                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
-                  />
+                  <label class="text-xs font-semibold text-gray-600 mb-1 block">Von</label>
+                  <input type="time" id="entryModalVon" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
                 </div>
                 <div>
-                  <label class="text-xs font-semibold text-gray-700">Bis</label>
-                  <input
-                    type="time"
-                    id="entryModalBis"
-                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
-                  />
+                  <label class="text-xs font-semibold text-gray-600 mb-1 block">Bis</label>
+                  <input type="time" id="entryModalBis" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
                 </div>
               </div>
             </div>
-            <div
-              class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2"
-            >
-              <button
-                onclick="window.closeEntryModal()"
-                class="px-4 py-2 font-semibold text-sm text-gray-600 active:scale-95 transition"
-              >
-                Abbrechen
-              </button>
-              <button
-                onclick="window.saveEntryModal()"
-                class="px-4 py-2 bg-primary font-bold text-sm text-white rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition"
-              >
-                Speichern
-              </button>
+            <div class="p-4 border-t border-gray-100 bg-gray-50 flex gap-2">
+              <button onclick="window.closeEntryModal()" class="flex-1 py-2.5 font-semibold text-sm text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition">Abbrechen</button>
+              <button onclick="window.saveEntryModal()" class="flex-1 py-2.5 bg-primary font-bold text-sm text-white rounded-xl hover:opacity-90 active:scale-95 transition">Speichern</button>
             </div>
           </div>
         </div>
 
         <!-- Admin Add Entry Modal -->
-        <div id="adminAddEntryModal" class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4">
-          <div class="bg-white rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10">
+        <div id="adminAddEntryModal" class="hidden fixed inset-0 z-[100] bg-black/50 flex items-end sm:items-center justify-center p-4">
+          <div class="bg-white rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-fade-in">
             <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 class="font-bold text-lg text-gray-800">Eintrag hinzufügen</h3>
-              <button onclick="window.closeAdminAddModal()" class="text-gray-400 hover:text-gray-800 transition">
-                <i data-lucide="x" class="w-5 h-5"></i>
-              </button>
+              <h3 class="font-bold text-base text-gray-800">Eintrag hinzufügen</h3>
+              <button onclick="window.closeAdminAddModal()" class="text-gray-400 hover:text-gray-800 transition p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-5 flex flex-col gap-4">
               <div>
-                <label class="text-xs font-semibold text-gray-700">Übungsleiter</label>
-                <select id="adminAddEntryUser" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition bg-white"></select>
+                <label class="text-xs font-semibold text-gray-600 mb-1 block">Übungsleiter</label>
+                <select id="adminAddEntryUser" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 transition"></select>
               </div>
               <div>
-                <label class="text-xs font-semibold text-gray-700">Datum</label>
-                <input type="date" id="adminAddEntryDatum" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                <label class="text-xs font-semibold text-gray-600 mb-1 block">Datum</label>
+                <input type="date" id="adminAddEntryDatum" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="text-xs font-semibold text-gray-700">Von</label>
-                  <input type="time" id="adminAddEntryVon" value="09:00" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                  <label class="text-xs font-semibold text-gray-600 mb-1 block">Von</label>
+                  <input type="time" id="adminAddEntryVon" value="09:00" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
                 </div>
                 <div>
-                  <label class="text-xs font-semibold text-gray-700">Bis</label>
-                  <input type="time" id="adminAddEntryBis" value="11:00" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                  <label class="text-xs font-semibold text-gray-600 mb-1 block">Bis</label>
+                  <input type="time" id="adminAddEntryBis" value="11:00" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
                 </div>
               </div>
             </div>
-            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
-              <button onclick="window.closeAdminAddModal()" class="px-4 py-2 font-semibold text-sm text-gray-600 active:scale-95 transition">Abbrechen</button>
-              <button onclick="window.saveAdminAddEntry()" class="px-4 py-2 bg-primary font-bold text-sm text-white rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition">Hinzufügen</button>
+            <div class="p-4 border-t border-gray-100 bg-gray-50 flex gap-2">
+              <button onclick="window.closeAdminAddModal()" class="flex-1 py-2.5 font-semibold text-sm text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition">Abbrechen</button>
+              <button onclick="window.saveAdminAddEntry()" class="flex-1 py-2.5 bg-primary font-bold text-sm text-white rounded-xl hover:opacity-90 active:scale-95 transition">Hinzufügen</button>
             </div>
           </div>
         </div>
 
         <!-- User Edit Modal -->
-        <div
-          id="userEditModal"
-          class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4"
-        >
-          <div
-            class="bg-white rounded-2xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10"
-          >
-            <div
-              class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50"
-            >
-              <h3 class="font-bold text-lg text-gray-800" id="ueModalTitle">
-                Übungsleiter bearbeiten
-              </h3>
-              <button
-                onclick="window.closeUserModal()"
-                class="text-gray-400 hover:text-gray-800 transition"
-              >
-                <i data-lucide="x" class="w-5 h-5"></i>
-              </button>
+        <div id="userEditModal" class="hidden fixed inset-0 z-[100] bg-black/50 flex items-end sm:items-center justify-center p-4">
+          <div class="bg-white rounded-2xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 class="font-bold text-base text-gray-800" id="ueModalTitle">Übungsleiter</h3>
+              <button onclick="window.closeUserModal()" class="text-gray-400 hover:text-gray-800 transition p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-4 flex-1 overflow-y-auto flex flex-col gap-3">
               <input type="hidden" id="ueModalId" />
               <div>
-                <label
-                  class="text-xs font-semibold text-gray-700 flex justify-between"
-                  >Vor- und Nachname
-                  <span id="ueModalErrorName" class="text-red-500 hidden"
-                    >Pflichtfeld!</span
-                  ></label
-                >
-                <input
-                  type="text"
-                  id="ueModalName"
-                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
-                />
+                <label class="text-xs font-semibold text-gray-600 flex justify-between mb-1">Vor- und Nachname <span id="ueModalErrorName" class="text-red-500 hidden">Pflichtfeld!</span></label>
+                <input type="text" id="ueModalName" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition" />
               </div>
               <div>
-                <label
-                  class="text-xs font-semibold text-gray-700 whitespace-nowrap"
-                  >Einrichtung / Zuordnung</label
-                >
-                <input
-                  type="text"
-                  id="ueModalEinrichtung"
-                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
-                />
+                <label class="text-xs font-semibold text-gray-600 mb-1 block">Einrichtung / Zuordnung</label>
+                <input type="text" id="ueModalEinrichtung" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="text-xs font-semibold text-gray-700"
-                    >Telefon</label
-                  >
-                  <input
-                    type="tel"
-                    id="ueModalTelefon"
-                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
-                    placeholder="+49..."
-                  />
+                  <label class="text-xs font-semibold text-gray-600 mb-1 block">Telefon</label>
+                  <input type="tel" id="ueModalTelefon" placeholder="+49..." class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
                 </div>
                 <div>
-                  <label class="text-xs font-semibold text-gray-700"
-                    >4-stelliger Login PIN</label
-                  >
-                  <input
-                    type="password"
-                    inputmode="numeric"
-                    maxlength="4"
-                    id="ueModalPin"
-                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm tracking-widest focus:outline-primary transition text-center"
-                  />
+                  <label class="text-xs font-semibold text-gray-600 mb-1 block">4-stelliger PIN</label>
+                  <input type="password" inputmode="numeric" maxlength="4" id="ueModalPin" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-primary/30 transition text-center" />
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="text-xs font-semibold text-gray-700"
-                    >E-Mail</label
-                  >
-                  <input
-                    type="email"
-                    id="ueModalEmail"
-                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
-                    placeholder="name@beispiel.de"
-                  />
+                  <label class="text-xs font-semibold text-gray-600 mb-1 block">E-Mail</label>
+                  <input type="email" id="ueModalEmail" placeholder="name@beispiel.de" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
                 </div>
                 <div>
-                  <label class="text-xs font-semibold text-gray-700"
-                    >Status</label
-                  >
-                  <select
-                    id="ueModalStatus"
-                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition bg-white"
-                  >
+                  <label class="text-xs font-semibold text-gray-600 mb-1 block">Status</label>
+                  <select id="ueModalStatus" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 transition">
                     <option value="aktiv">Aktiv</option>
                     <option value="pausiert">Pausiert</option>
                   </select>
                 </div>
               </div>
               <div>
-                <label class="text-xs font-semibold text-gray-700"
-                  >Adressdaten</label
-                >
-                <textarea
-                  id="ueModalAdresse"
-                  rows="3"
-                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary resize-none transition"
-                  placeholder="Straße, PLZ Ort"
-                ></textarea>
+                <label class="text-xs font-semibold text-gray-600 mb-1 block">Adressdaten</label>
+                <textarea id="ueModalAdresse" rows="2" placeholder="Straße, PLZ Ort" class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition"></textarea>
               </div>
               <div>
-                <label class="text-xs font-semibold text-gray-700"
-                  >Gesonderte Notizen</label
-                >
-                <textarea
-                  id="ueModalNotizen"
-                  rows="3"
-                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary resize-none transition"
-                  placeholder="Ausfälle, Urlaub, Besonderheiten..."
-                ></textarea>
+                <label class="text-xs font-semibold text-gray-600 mb-1 block">Notizen</label>
+                <textarea id="ueModalNotizen" rows="2" placeholder="Ausfälle, Urlaub, Besonderheiten..." class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition"></textarea>
               </div>
             </div>
-            <div
-              class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center"
-            >
-              <button
-                onclick="window.deleteUserModal()"
-                id="ueModalDeleteBtn"
-                class="text-red-500 hover:text-red-700 p-2 text-sm font-bold transition"
-              >
+            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+              <button onclick="window.deleteUserModal()" id="ueModalDeleteBtn" class="text-red-400 hover:text-red-600 p-2 transition">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
               </button>
               <div class="flex gap-2">
-                <button
-                  onclick="window.closeUserModal()"
-                  class="px-4 py-2 font-medium text-sm text-gray-600 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  onclick="window.saveUserModal()"
-                  class="px-4 py-2 font-bold text-sm text-white bg-primary rounded-lg shadow-sm hover:bg-primary/90 transition"
-                >
-                  Speichern
-                </button>
+                <button onclick="window.closeUserModal()" class="px-4 py-2 font-medium text-sm text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition">Abbrechen</button>
+                <button onclick="window.saveUserModal()" class="px-4 py-2 font-bold text-sm text-white bg-primary rounded-xl hover:opacity-90 transition">Speichern</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- System Notification Overlay -->
-        <div
-          id="notificationOverlay"
-          class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium transition-opacity duration-300 opacity-0 pointer-events-none flex items-center gap-2"
-        >
-          <i data-lucide="info" class="w-4 h-4"></i>
-          <span id="notificationMsg">Info</span>
-        </div>
       </main>
     </div>
 
     <script>
-      const USE_MOCK = window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1";
-
+      // ---- Firebase REST API ----
+      const USE_MOCK = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
       const FB_URL = "https://msbw-stundenverwaltung-default-rtdb.europe-west1.firebasedatabase.app";
       const fbGet = async (path) => { const r = await fetch(FB_URL + "/" + path + ".json"); return r.ok ? r.json() : null; };
       const fbSet = async (path, val) => { await fetch(FB_URL + "/" + path + ".json", {method:"PUT", body:JSON.stringify(val)}); };
@@ -873,76 +535,53 @@
       const fbUpdate = async (path, val) => { await fetch(FB_URL + "/" + path + ".json", {method:"PATCH", body:JSON.stringify(val)}); };
       const fbRemove = async (path) => { await fetch(FB_URL + "/" + path + ".json", {method:"DELETE"}); };
 
+      // ---- Mock (Localhost) ----
       let dbMockState = { einstellungen: null, uebungsleiter: {}, eintraege: {}, freigaben: {}, abschluesse: {} };
-      if (USE_MOCK) {
-        try { const s = localStorage.getItem("msbw_db"); if (s) dbMockState = JSON.parse(s); } catch (e) {}
-      }
+      if (USE_MOCK) { try { const s = localStorage.getItem("msbw_db"); if (s) dbMockState = JSON.parse(s); } catch(e) {} }
       const saveMock = () => { if (USE_MOCK) localStorage.setItem("msbw_db", JSON.stringify(dbMockState)); };
       const generateId = () => Math.random().toString(36).substring(2, 10);
 
+      // ---- API ----
       const API = {
-        getEinstellungen: async () => {
-          if (USE_MOCK) return dbMockState.einstellungen;
-          return fbGet("einstellungen");
-        },
-        setEinstellungen: async (data) => {
-          if (USE_MOCK) { dbMockState.einstellungen = data; saveMock(); return true; }
-          return fbSet("einstellungen", data);
-        },
+        getEinstellungen: async () => USE_MOCK ? dbMockState.einstellungen : fbGet("einstellungen"),
+        setEinstellungen: async (d) => { if (USE_MOCK) { dbMockState.einstellungen = d; saveMock(); } else await fbSet("einstellungen", d); },
         getUebungsleiterList: async () => {
-          if (USE_MOCK) return Object.entries(dbMockState.uebungsleiter).map(([id, data]) => ({ id, ...data }));
+          if (USE_MOCK) return Object.entries(dbMockState.uebungsleiter).map(([id,d]) => ({id,...d}));
           const val = await fbGet("uebungsleiter");
-          return val ? Object.entries(val).map(([id, data]) => ({ id, ...data })) : [];
+          return val ? Object.entries(val).map(([id,d]) => ({id,...d})) : [];
         },
-        addUebungsleiter: async (data) => {
+        addUebungsleiter: async (d) => {
           const id = generateId();
-          if (USE_MOCK) { dbMockState.uebungsleiter[id] = data; saveMock(); return id; }
-          await fbSet("uebungsleiter/" + id, data); return id;
+          if (USE_MOCK) { dbMockState.uebungsleiter[id] = d; saveMock(); } else await fbSet("uebungsleiter/"+id, d);
+          return id;
         },
-        updateUebungsleiter: async (id, data) => {
-          if (USE_MOCK) { dbMockState.uebungsleiter[id] = { ...dbMockState.uebungsleiter[id], ...data }; saveMock(); return true; }
-          return fbUpdate("uebungsleiter/" + id, data);
+        updateUebungsleiter: async (id, d) => { if (USE_MOCK) { dbMockState.uebungsleiter[id]={...dbMockState.uebungsleiter[id],...d}; saveMock(); } else await fbUpdate("uebungsleiter/"+id, d); },
+        deleteUebungsleiter: async (id) => { if (USE_MOCK) { delete dbMockState.uebungsleiter[id]; saveMock(); } else await fbRemove("uebungsleiter/"+id); },
+        getFreigaben: async () => USE_MOCK ? (dbMockState.freigaben||{}) : ((await fbGet("freigaben"))||{}),
+        setFreigabe: async (monat, uid, v) => {
+          if (USE_MOCK) { if(!dbMockState.freigaben) dbMockState.freigaben={}; if(!dbMockState.freigaben[monat]) dbMockState.freigaben[monat]={}; dbMockState.freigaben[monat][uid]=v; saveMock(); }
+          else await fbSet("freigaben/"+monat+"/"+uid, v);
         },
-        deleteUebungsleiter: async (id) => {
-          if (USE_MOCK) { delete dbMockState.uebungsleiter[id]; saveMock(); return; }
-          return fbRemove("uebungsleiter/" + id);
-        },
-        getFreigaben: async () => {
-          if (USE_MOCK) return dbMockState.freigaben || {};
-          return (await fbGet("freigaben")) || {};
-        },
-        setFreigabe: async (monat, userId, v) => {
-          if (USE_MOCK) { if (!dbMockState.freigaben) dbMockState.freigaben = {}; if (!dbMockState.freigaben[monat]) dbMockState.freigaben[monat] = {}; dbMockState.freigaben[monat][userId] = v; saveMock(); return true; }
-          return fbSet("freigaben/" + monat + "/" + userId, v);
-        },
-        getAbschluesse: async () => {
-          if (USE_MOCK) return dbMockState.abschluesse || {};
-          return (await fbGet("abschluesse")) || {};
-        },
-        setAbschluss: async (monat, userId, v) => {
-          if (USE_MOCK) { if (!dbMockState.abschluesse) dbMockState.abschluesse = {}; if (!dbMockState.abschluesse[monat]) dbMockState.abschluesse[monat] = {}; dbMockState.abschluesse[monat][userId] = v; saveMock(); return true; }
-          return fbSet("abschluesse/" + monat + "/" + userId, v);
+        getAbschluesse: async () => USE_MOCK ? (dbMockState.abschluesse||{}) : ((await fbGet("abschluesse"))||{}),
+        setAbschluss: async (monat, uid, v) => {
+          if (USE_MOCK) { if(!dbMockState.abschluesse) dbMockState.abschluesse={}; if(!dbMockState.abschluesse[monat]) dbMockState.abschluesse[monat]={}; dbMockState.abschluesse[monat][uid]=v; saveMock(); }
+          else await fbSet("abschluesse/"+monat+"/"+uid, v);
         },
         getEintraege: async () => {
-          if (USE_MOCK) return Object.entries(dbMockState.eintraege).map(([id, data]) => ({ id, ...data }));
+          if (USE_MOCK) return Object.entries(dbMockState.eintraege).map(([id,d]) => ({id,...d}));
           const val = await fbGet("eintraege");
-          return val ? Object.entries(val).map(([id, data]) => ({ id, ...data })) : [];
+          return val ? Object.entries(val).map(([id,d]) => ({id,...d})) : [];
         },
-        addEintrag: async (data) => {
+        addEintrag: async (d) => {
           const id = generateId();
-          if (USE_MOCK) { dbMockState.eintraege[id] = data; saveMock(); return id; }
-          await fbSet("eintraege/" + id, data); return id;
+          if (USE_MOCK) { dbMockState.eintraege[id] = d; saveMock(); } else await fbSet("eintraege/"+id, d);
+          return id;
         },
-        updateEintrag: async (id, data) => {
-          if (USE_MOCK) { dbMockState.eintraege[id] = { ...dbMockState.eintraege[id], ...data }; saveMock(); return true; }
-          return fbUpdate("eintraege/" + id, data);
-        },
-        deleteEintrag: async (id) => {
-          if (USE_MOCK) { delete dbMockState.eintraege[id]; saveMock(); return true; }
-          return fbRemove("eintraege/" + id);
-        },
+        updateEintrag: async (id, d) => { if (USE_MOCK) { dbMockState.eintraege[id]={...dbMockState.eintraege[id],...d}; saveMock(); } else await fbUpdate("eintraege/"+id, d); },
+        deleteEintrag: async (id) => { if (USE_MOCK) { delete dbMockState.eintraege[id]; saveMock(); } else await fbRemove("eintraege/"+id); },
       };
 
+      // ---- State ----
       const STATE = {
         view: "loadingView",
         einstellungen: null,
@@ -952,47 +591,72 @@
         abschluesse: {},
         currentUser: null,
         isAdmin: false,
-        adminMonthStr: new Date().toISOString().substring(0, 7),
+        adminMonthStr: new Date().toISOString().substring(0,7),
         adminTab: "abrechnung",
         adminYearStart: new Date().getFullYear(),
         ulActiveMonthStr: null,
+        ulAvailableMonths: [],
+        ulActiveMonthIndex: 0,
       };
 
+      // ---- Helpers ----
       const el = (id) => document.getElementById(id);
-
-      const showNotification = (msg, duration = 3000) => {
-        const overlay = el("notificationOverlay");
-        el("notificationMsg").textContent = msg;
-        overlay.classList.remove("opacity-0", "pointer-events-none");
-        setTimeout(() => overlay.classList.add("opacity-0", "pointer-events-none"), duration);
-      };
 
       const calculateHours = (von, bis) => {
         if (!von || !bis) return 0;
-        const [vH, vM] = von.split(":").map(Number);
-        const [bH, bM] = bis.split(":").map(Number);
-        return Math.max(0, parseFloat((bH - vH + (bM - vM) / 60).toFixed(2)));
+        const [vH,vM] = von.split(":").map(Number);
+        const [bH,bM] = bis.split(":").map(Number);
+        return Math.max(0, parseFloat((bH-vH+(bM-vM)/60).toFixed(2)));
       };
 
-      const formatHours = (h) => h.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+      const formatHours = (h) => h.toLocaleString("de-DE", {minimumFractionDigits:1, maximumFractionDigits:2});
+
       const formatMonthStr = (yyyyMm) => {
-        const [y, m] = yyyyMm.split("-");
-        const date = new Date(y, parseInt(m) - 1, 1);
-        return date.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+        const [y,m] = yyyyMm.split("-");
+        return new Date(+y, +m-1, 1).toLocaleDateString("de-DE", {month:"long", year:"numeric"});
       };
-
-      const MONTHS_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
       const getFiscalMonths = (startMonth, startYear) => {
         const months = [];
         for (let i = 0; i < 12; i++) {
-          let m = ((startMonth - 1 + i) % 12) + 1;
-          let y = startYear + Math.floor((startMonth - 1 + i) / 12);
-          months.push(`${y}-${String(m).padStart(2, '0')}`);
+          const m = ((startMonth-1+i)%12)+1;
+          const y = startYear + Math.floor((startMonth-1+i)/12);
+          months.push(`${y}-${String(m).padStart(2,'0')}`);
         }
         return months;
       };
 
+      // ---- Toast ----
+      let toastTimer = null;
+      const showNotification = (msg, type = "success") => {
+        const toast = el("toast");
+        const icon = el("toastIcon");
+        const msgEl = el("toastMsg");
+        msgEl.textContent = msg;
+        toast.className = "toast fixed bottom-5 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-xl shadow-xl text-sm font-semibold flex items-center gap-2 max-w-xs text-center";
+        if (type === "success") { toast.classList.add("bg-emerald-600","text-white"); icon.setAttribute("data-lucide","check-circle"); }
+        else if (type === "error") { toast.classList.add("bg-red-600","text-white"); icon.setAttribute("data-lucide","x-circle"); }
+        else { toast.classList.add("bg-gray-800","text-white"); icon.setAttribute("data-lucide","info"); }
+        if (window.lucide) window.lucide.createIcons();
+        toast.style.opacity = "1"; toast.style.transform = "translateX(-50%) translateY(0)";
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.style.opacity = "0"; toast.style.transform = "translateX(-50%) translateY(8px)"; }, 3000);
+      };
+
+      // ---- Confirm Modal ----
+      const confirmAction = (msg, onConfirm, confirmLabel = "Bestätigen", danger = false) => {
+        el("confirmModalMsg").textContent = msg;
+        const okBtn = el("confirmModalOk");
+        okBtn.textContent = confirmLabel;
+        okBtn.className = `flex-1 py-3 rounded-xl font-bold text-sm transition ${danger ? "bg-red-600 text-white hover:bg-red-700" : "bg-gray-900 text-white hover:bg-black"}`;
+        el("confirmModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+        const cleanup = () => el("confirmModal").classList.add("hidden");
+        el("confirmModalOk").onclick = () => { cleanup(); onConfirm(); };
+        el("confirmModalCancel").onclick = cleanup;
+      };
+
+      // ---- View Management ----
       const setAppWidth = (isAdmin) => {
         const app = el("app");
         if (isAdmin) { app.classList.remove("max-w-xl"); app.classList.add("max-w-full"); }
@@ -1000,220 +664,248 @@
       };
 
       const switchView = (viewId) => {
-        const views = ["loadingView","roleSelectView","ulLoginView","ulDashboardView","adminLoginView","adminDashboardView"];
-        views.forEach((v) => {
-          const element = el(v);
-          if (!element) return;
-          if (v === viewId) { element.classList.remove("hidden"); element.classList.add("flex"); }
-          else { element.classList.add("hidden"); element.classList.remove("flex"); }
+        ["loadingView","roleSelectView","ulLoginView","ulDashboardView","adminLoginView","adminDashboardView"].forEach(v => {
+          const e = el(v);
+          if (!e) return;
+          if (v === viewId) { e.classList.remove("hidden"); e.classList.add("flex"); }
+          else { e.classList.add("hidden"); e.classList.remove("flex"); }
         });
         STATE.view = viewId;
-        if (STATE.currentUser || STATE.isAdmin) el("logoutBtn").classList.remove("hidden");
-        else el("logoutBtn").classList.add("hidden");
+        el("logoutBtn").classList.toggle("hidden", !(STATE.currentUser || STATE.isAdmin));
         setAppWidth(STATE.isAdmin && viewId === "adminDashboardView");
-        // Dark body bg for login/setup screens, light for dashboards
-        const lightViews = ["ulDashboardView", "adminDashboardView"];
-        if (lightViews.includes(viewId)) document.body.classList.add("light-bg");
-        else document.body.classList.remove("light-bg");
+        document.body.classList.toggle("light-bg", ["ulDashboardView","adminDashboardView"].includes(viewId));
         if (window.lucide) window.lucide.createIcons();
       };
 
       const logout = () => { STATE.currentUser = null; STATE.isAdmin = false; switchView("roleSelectView"); };
 
+      // ---- Loading Error ----
       const showLoadingError = (msg) => {
-        const errDiv = document.getElementById("loadingError");
-        if (errDiv) { errDiv.textContent = msg; errDiv.classList.remove("hidden"); }
+        const e = el("loadingError"); if (e) { e.textContent = msg; e.classList.remove("hidden"); }
         console.error("[MSBW] " + msg);
       };
 
+      // ---- Boot ----
       const initApp = async () => {
         try {
-          console.log("[MSBW] initApp start, USE_MOCK=" + USE_MOCK);
           STATE.einstellungen = await API.getEinstellungen();
-          console.log("[MSBW] einstellungen geladen:", JSON.stringify(STATE.einstellungen));
           if (!STATE.einstellungen) {
             STATE.einstellungen = { admin_pin: "123456", pflicht_stunden: 6.75, start_monat: 3, start_jahr: 2026 };
             await API.setEinstellungen(STATE.einstellungen);
           }
-          loadDataAndStart();
-        } catch(e) {
-          showLoadingError("Fehler beim Laden: " + e.message);
-        }
+          await loadDataAndStart();
+        } catch(e) { showLoadingError("Fehler: " + e.message); }
       };
 
       const loadDataAndStart = async () => {
         try {
-        console.log("[MSBW] loadDataAndStart start");
-        STATE.ulList = await API.getUebungsleiterList();
-        console.log("[MSBW] UL geladen:", STATE.ulList.length);
-        STATE.entries = await API.getEintraege();
-        console.log("[MSBW] Einträge geladen:", STATE.entries.length);
-        STATE.freigaben = await API.getFreigaben();
-        STATE.abschluesse = await API.getAbschluesse();
-        STATE.adminYearStart = STATE.einstellungen.start_jahr || new Date().getFullYear();
-        console.log("[MSBW] switchView roleSelectView");
-        if (STATE.currentUser) renderUlDashboard();
-        else if (STATE.isAdmin) renderAdminDashboard();
-        else switchView("roleSelectView");
-        } catch(e) { showLoadingError("Fehler beim Laden: " + e.message); }
+          STATE.ulList = await API.getUebungsleiterList();
+          STATE.entries = await API.getEintraege();
+          STATE.freigaben = await API.getFreigaben();
+          STATE.abschluesse = await API.getAbschluesse();
+          STATE.adminYearStart = STATE.einstellungen.start_jahr || new Date().getFullYear();
+          if (STATE.currentUser) renderUlDashboard();
+          else if (STATE.isAdmin) renderAdminDashboard();
+          else switchView("roleSelectView");
+        } catch(e) { showLoadingError("Fehler: " + e.message); }
       };
 
       // ---- Role Selection ----
-      el("navUlLoginBtn").addEventListener("click", () => { el("ulLoginName").value = ""; el("ulLoginPin").value = ""; el("ulLoginError").classList.add("hidden"); switchView("ulLoginView"); });
-      el("navAdminLoginBtn").addEventListener("click", () => { el("adminLoginPin").value = ""; el("adminLoginError").classList.add("hidden"); switchView("adminLoginView"); });
+      el("navUlLoginBtn").addEventListener("click", () => {
+        el("ulLoginName").value = ""; el("ulLoginPin").value = "";
+        el("ulLoginError").classList.add("hidden");
+        // Populate autocomplete
+        const dl = el("ulNameList");
+        dl.innerHTML = STATE.ulList.map(u => `<option value="${u.name}">`).join("");
+        switchView("ulLoginView");
+      });
+      el("navAdminLoginBtn").addEventListener("click", () => {
+        el("adminLoginPin").value = ""; el("adminLoginError").classList.add("hidden");
+        switchView("adminLoginView");
+      });
       el("backToRoleFromUlBtn").addEventListener("click", () => switchView("roleSelectView"));
       el("backToRoleFromAdminBtn").addEventListener("click", () => switchView("roleSelectView"));
       el("logoutBtn").addEventListener("click", logout);
 
-      // ---- Ü-Leiter Login ----
+      // ---- UL Login (mit PIN-Validierung) ----
       el("ulLoginSubmitBtn").addEventListener("click", () => {
         const nameVal = el("ulLoginName").value.trim().toLowerCase();
+        const pinVal = el("ulLoginPin").value.trim();
         const err = el("ulLoginError");
-        // TODO: Passwort/PIN-Validierung später aktivieren
-        const matchedUser = nameVal
-          ? STATE.ulList.find((u) => u.name.toLowerCase() === nameVal)
-          : STATE.ulList[0];
-        if (matchedUser) {
-          STATE.currentUser = matchedUser;
-          renderUlDashboard();
-        } else {
-          err.textContent = "Kein Übungsleiter gefunden.";
-          err.classList.remove("hidden");
-        }
-      });
-
-      // ---- Ü-Leiter Dashboard ----
-      el("ulSubmitMonthBtn").addEventListener("click", () => {
-        const monat = STATE.ulActiveMonthStr;
-        if (!monat) return;
-        el("confirmMonthModalText").textContent = `Den Monat ${formatMonthStr(monat)} wirklich abschließen? Danach können keine Zeiten mehr bearbeitet oder hinzugefügt werden.`;
-        el("confirmMonthModal").classList.remove("hidden");
-        if (window.lucide) window.lucide.createIcons();
-      });
-
-      el("confirmMonthCancel").addEventListener("click", () => {
-        el("confirmMonthModal").classList.add("hidden");
-      });
-
-      el("confirmMonthOk").addEventListener("click", async () => {
-        el("confirmMonthModal").classList.add("hidden");
-        const monat = STATE.ulActiveMonthStr;
-        const btn = el("ulSubmitMonthBtn");
-        btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Speichere...`;
-        await API.setAbschluss(monat, STATE.currentUser.id, true);
-        STATE.abschluesse = await API.getAbschluesse();
-        showNotification("Monat " + formatMonthStr(monat) + " wurde erfolgreich abgeschlossen!");
+        if (!nameVal) { err.textContent = "Bitte Name eingeben."; err.classList.remove("hidden"); return; }
+        const matchedUser = STATE.ulList.find(u => u.name.toLowerCase() === nameVal);
+        if (!matchedUser) { err.textContent = "Kein Übungsleiter mit diesem Namen gefunden."; err.classList.remove("hidden"); return; }
+        if (pinVal !== String(matchedUser.pin)) { err.textContent = "Falscher PIN."; err.classList.remove("hidden"); return; }
+        err.classList.add("hidden");
+        STATE.currentUser = matchedUser;
         renderUlDashboard();
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i> Monat abschließen`;
-        if (window.lucide) window.lucide.createIcons();
       });
 
+      // ---- Admin Login (mit PIN-Validierung) ----
+      el("adminLoginSubmitBtn").addEventListener("click", () => {
+        const pin = el("adminLoginPin").value.trim();
+        const adminPin = String(STATE.einstellungen.admin_pin || "123456");
+        const err = el("adminLoginError");
+        if (pin !== adminPin) { err.textContent = "Falscher Admin PIN."; err.classList.remove("hidden"); return; }
+        err.classList.add("hidden");
+        STATE.isAdmin = true;
+        renderAdminDashboard();
+      });
+
+      // ---- UL Dashboard ----
       const renderUlDashboard = () => {
         switchView("ulDashboardView");
         const user = STATE.currentUser;
         el("ulDashName").textContent = user.name;
-        el("ulDashEinrichtung").textContent = user.einrichtung;
+        el("ulDashEinrichtung").textContent = user.einrichtung || "";
 
-        const todayStr = new Date().toISOString().substring(0, 7);
+        const todayStr = new Date().toISOString().substring(0,7);
         const sm = STATE.einstellungen.start_monat || 3;
         const sy = STATE.einstellungen.start_jahr || new Date().getFullYear();
 
-        // Build list of fiscal months up to today (up to 2 years)
+        // Build all months up to today
         const allMonths = [];
-        for (let i = 0; i < 24; i++) {
-          let m = ((sm - 1 + i) % 12) + 1;
-          let y = sy + Math.floor((sm - 1 + i) / 12);
-          const ym = `${y}-${String(m).padStart(2, '0')}`;
+        for (let i = 0; i < 36; i++) {
+          const m = ((sm-1+i)%12)+1;
+          const y = sy + Math.floor((sm-1+i)/12);
+          const ym = `${y}-${String(m).padStart(2,'0')}`;
           if (ym > todayStr) break;
           allMonths.push(ym);
         }
+        STATE.ulAvailableMonths = allMonths;
 
-        let activeMonth = todayStr;
-        for (const m of allMonths) {
-          if (!(STATE.abschluesse[m] && STATE.abschluesse[m][user.id])) { activeMonth = m; break; }
+        // Find first non-closed month as default
+        let defaultIdx = allMonths.length - 1;
+        for (let i = 0; i < allMonths.length; i++) {
+          if (!(STATE.abschluesse[allMonths[i]] && STATE.abschluesse[allMonths[i]][user.id])) {
+            defaultIdx = i; break;
+          }
         }
-        STATE.ulActiveMonthStr = activeMonth;
-
-        const isClosed = STATE.abschluesse[activeMonth] && STATE.abschluesse[activeMonth][user.id];
-
-        const [ay, am] = activeMonth.split('-').map(Number);
-        const lastDay = new Date(ay, am, 0).getDate();
-        el("newEntryDatum").min = `${activeMonth}-01`;
-        el("newEntryDatum").max = `${activeMonth}-${String(lastDay).padStart(2,'0')}`;
-        el("newEntryDatum").value = new Date().toISOString().substring(0,7) === activeMonth
-          ? new Date().toISOString().substring(0, 10)
-          : `${activeMonth}-01`;
-
-        el("ulDashListMonthLabel").textContent = formatMonthStr(activeMonth);
-        el("ulDashMonthStatus").textContent = formatMonthStr(activeMonth);
-
-        el("ulAddEntryBlock").classList.toggle("hidden", !!isClosed);
-        el("ulMonthClosedNotice").classList.toggle("hidden", !isClosed);
-        el("ulSubmitMonthBtn").classList.toggle("hidden", !!isClosed);
-        document.querySelector(".text-xs.text-secondary.mt-2.text-center")?.classList.toggle("hidden", !!isClosed);
-
-        updateUlProgressAndList(activeMonth);
+        STATE.ulActiveMonthIndex = defaultIdx;
+        renderUlMonth();
       };
 
+      const renderUlMonth = () => {
+        const user = STATE.currentUser;
+        const months = STATE.ulAvailableMonths;
+        const idx = STATE.ulActiveMonthIndex;
+        const activeMonth = months[idx] || new Date().toISOString().substring(0,7);
+        STATE.ulActiveMonthStr = activeMonth;
+
+        // Nav buttons
+        el("ulPrevMonthBtn").disabled = idx === 0;
+        el("ulPrevMonthBtn").classList.toggle("opacity-30", idx === 0);
+        el("ulNextMonthBtn").disabled = idx >= months.length - 1;
+        el("ulNextMonthBtn").classList.toggle("opacity-30", idx >= months.length - 1);
+        el("ulDashMonthStatus").textContent = formatMonthStr(activeMonth);
+
+        const isClosed = !!(STATE.abschluesse[activeMonth] && STATE.abschluesse[activeMonth][user.id]);
+
+        // Date range for new entries
+        const [ay, am] = activeMonth.split('-').map(Number);
+        const lastDay = new Date(ay, am, 0).getDate();
+        const todayStr = new Date().toISOString().substring(0,10);
+        el("newEntryDatum").min = `${activeMonth}-01`;
+        el("newEntryDatum").max = `${activeMonth}-${String(lastDay).padStart(2,'0')}`;
+        el("newEntryDatum").value = todayStr.substring(0,7) === activeMonth ? todayStr : `${activeMonth}-01`;
+
+        el("ulAddEntryBlock").classList.toggle("hidden", isClosed);
+        el("ulMonthClosedNotice").classList.toggle("hidden", !isClosed);
+        el("ulSubmitMonthBtn").classList.toggle("hidden", isClosed);
+        el("ulSubmitHint").classList.toggle("hidden", isClosed);
+
+        updateUlProgressAndList(activeMonth);
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      el("ulPrevMonthBtn").addEventListener("click", () => {
+        if (STATE.ulActiveMonthIndex > 0) { STATE.ulActiveMonthIndex--; renderUlMonth(); }
+      });
+      el("ulNextMonthBtn").addEventListener("click", () => {
+        if (STATE.ulActiveMonthIndex < STATE.ulAvailableMonths.length - 1) { STATE.ulActiveMonthIndex++; renderUlMonth(); }
+      });
+
       const updateUlProgressAndList = (monthStr) => {
+        const user = STATE.currentUser;
         const userEntries = STATE.entries
-          .filter((e) => e.uebungsleiter_id === STATE.currentUser.id && e.monat === monthStr)
-          .sort((a, b) => new Date(b.datum) - new Date(a.datum));
+          .filter(e => e.uebungsleiter_id === user.id && e.monat === monthStr)
+          .sort((a,b) => b.datum.localeCompare(a.datum));
 
-        const totalHours = userEntries.reduce((sum, e) => sum + e.stunden, 0);
-        const goal = STATE.einstellungen.pflicht_stunden;
+        const total = userEntries.reduce((s,e) => s + e.stunden, 0);
+        const goal = STATE.einstellungen.pflicht_stunden || 6.75;
+        const pct = Math.min(100, Math.round((total/goal)*100));
 
-        el("ulDashHoursCount").innerHTML = `${formatHours(totalHours)} <span class="text-2xl text-gray-400 font-normal ml-1">/ ${goal}h</span>`;
-        const pct = Math.min(100, Math.round((totalHours / goal) * 100));
+        el("ulDashHoursCount").innerHTML = `${formatHours(total)} <span class="text-xl text-gray-400 font-normal">/ ${goal}h</span>`;
+        el("ulDashGoalPct").textContent = pct + "%";
+
         const bar = el("ulDashProgressBar");
-        bar.style.width = `${pct}%`;
-
+        bar.style.width = pct + "%";
         if (pct >= 100) {
-          bar.classList.replace("bg-primary", "bg-green-500");
-          el("ulDashGoalMsg").innerHTML = `<span class="text-green-600 font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> Ziel erreicht!</span>`;
+          bar.className = "bg-emerald-500 h-full rounded-full transition-all duration-500";
+          el("ulDashGoalMsg").innerHTML = `<span class="text-emerald-600 font-bold">✓ Ziel erreicht!</span>`;
         } else {
-          if (bar.classList.contains("bg-green-500")) bar.classList.replace("bg-green-500", "bg-primary");
-          el("ulDashGoalMsg").innerHTML = `Noch <span class="font-bold text-gray-600">${formatHours(goal - totalHours)}</span> Stunden bis zum Pflichtziel`;
+          bar.className = "bg-primary h-full rounded-full transition-all duration-500";
+          el("ulDashGoalMsg").innerHTML = `Noch <strong class="text-gray-700">${formatHours(goal-total)}h</strong> bis zum Pflichtziel`;
         }
 
-        const isClosed = STATE.abschluesse[monthStr] && STATE.abschluesse[monthStr][STATE.currentUser.id];
+        const isClosed = !!(STATE.abschluesse[monthStr] && STATE.abschluesse[monthStr][user.id]);
+        el("ulEntriesCount").textContent = userEntries.length ? `${userEntries.length} Einträge` : "";
+
         const listDiv = el("ulEntriesList");
         if (userEntries.length === 0) {
-          listDiv.innerHTML = '<div class="text-center text-sm text-secondary p-4 bg-bglight rounded-xl border border-gray-100">Keine Einträge in diesem Monat.</div>';
+          listDiv.innerHTML = '<div class="text-center text-sm text-secondary p-5 bg-white rounded-xl border border-gray-100">Keine Einträge in diesem Monat.</div>';
         } else {
-          listDiv.innerHTML = userEntries.map((e) => `
-            <div class="flex justify-between items-center p-3 bg-bglight rounded-lg border-l-4 border-primary">
+          listDiv.innerHTML = userEntries.map(e => `
+            <div class="flex justify-between items-center p-3.5 bg-white rounded-xl border-l-4 border-primary shadow-sm border border-gray-100">
               <div>
-                <p class="font-bold text-gray-800 text-lg">${new Date(e.datum + 'T12:00:00').toLocaleDateString("de-DE")}</p>
-                <p class="text-base text-gray-600 mt-1 font-semibold">${e.von} - ${e.bis} Uhr</p>
+                <p class="font-bold text-gray-800">${new Date(e.datum+'T12:00:00').toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})}</p>
+                <p class="text-sm text-gray-500 mt-0.5 font-medium">${e.von} – ${e.bis} Uhr</p>
               </div>
-              <div class="flex items-center gap-3">
-                <span class="font-mono font-bold text-primary text-3xl">${formatHours(e.stunden)}h</span>
-                ${!isClosed ? `<button onclick="window.ulDeleteEntry('${e.id}')" class="text-gray-300 hover:text-red-500 transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-primary text-xl">${formatHours(e.stunden)}h</span>
+                ${!isClosed ? `
+                  <button onclick="window.ulEditEntry('${e.id}')" class="text-gray-300 hover:text-primary transition p-1.5 rounded-lg hover:bg-primary/10"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                  <button onclick="window.ulDeleteEntry('${e.id}')" class="text-gray-300 hover:text-red-500 transition p-1.5 rounded-lg hover:bg-red-50"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                ` : ''}
               </div>
             </div>`).join("");
         }
         if (window.lucide) window.lucide.createIcons();
       };
 
-      window.ulDeleteEntry = async (id) => {
-        if (!confirm("Eintrag löschen?")) return;
-        await API.deleteEintrag(id);
-        STATE.entries = await API.getEintraege();
-        updateUlProgressAndList(STATE.ulActiveMonthStr);
-        showNotification("Eintrag gelöscht");
+      // UL Delete Entry
+      window.ulDeleteEntry = (id) => {
+        confirmAction("Eintrag löschen?", async () => {
+          // Lokal entfernen
+          STATE.entries = STATE.entries.filter(e => e.id !== id);
+          updateUlProgressAndList(STATE.ulActiveMonthStr);
+          showNotification("Eintrag gelöscht");
+          await API.deleteEintrag(id);
+        }, "Löschen", true);
       };
 
+      // UL Edit Entry
+      window.ulEditEntry = (id) => {
+        const entry = STATE.entries.find(e => e.id === id);
+        if (!entry) return;
+        el("entryModalId").value = id;
+        el("entryModalDatum").value = entry.datum;
+        el("entryModalVon").value = entry.von;
+        el("entryModalBis").value = entry.bis;
+        el("entryEditModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      // Preview hours
       const previewHours = () => {
-        const hours = calculateHours(el("newEntryVon").value, el("newEntryBis").value);
-        el("newEntryPreview").textContent = formatHours(hours) + "h";
-        el("addEntryBtn").disabled = hours <= 0;
+        const h = calculateHours(el("newEntryVon").value, el("newEntryBis").value);
+        el("newEntryPreview").textContent = formatHours(h) + "h";
+        el("addEntryBtn").disabled = h <= 0;
       };
       el("newEntryVon").addEventListener("input", previewHours);
       el("newEntryBis").addEventListener("input", previewHours);
 
+      // Add Entry
       el("addEntryBtn").addEventListener("click", async () => {
         const datum = el("newEntryDatum").value;
         const von = el("newEntryVon").value;
@@ -1222,40 +914,72 @@
         if (!datum || !von || !bis || stunden <= 0) return;
         const btn = el("addEntryBtn");
         btn.disabled = true;
-        btn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;border-top-width:2px;border-top-color:white;"></div> Speichern...';
-        await API.addEintrag({ uebungsleiter_id: STATE.currentUser.id, datum, monat: datum.substring(0, 7), von, bis, stunden });
-        showNotification("Eintrag gespeichert!");
+        btn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:white;"></div> Speichern...';
+        const data = { uebungsleiter_id: STATE.currentUser.id, datum, monat: datum.substring(0,7), von, bis, stunden };
+        const id = await API.addEintrag(data);
+        STATE.entries.push({id, ...data});
         el("newEntryVon").value = ""; el("newEntryBis").value = "";
         previewHours();
-        btn.innerHTML = "Eintrag speichern";
-        STATE.entries = await API.getEintraege();
-        updateUlProgressAndList(datum.substring(0, 7));
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Eintrag speichern';
+        if (window.lucide) window.lucide.createIcons();
+        showNotification("Eintrag gespeichert!");
+        updateUlProgressAndList(datum.substring(0,7));
       });
 
-      // ---- Admin Login ----
-      el("adminLoginSubmitBtn").addEventListener("click", () => {
-        // TODO: PIN-Validierung später aktivieren
-        STATE.isAdmin = true;
-        renderAdminDashboard();
+      // Month Close
+      el("ulSubmitMonthBtn").addEventListener("click", () => {
+        const monat = STATE.ulActiveMonthStr;
+        el("confirmMonthModalText").textContent = `${formatMonthStr(monat)} wirklich abschließen? Danach können keine Zeiten mehr bearbeitet oder hinzugefügt werden.`;
+        el("confirmMonthModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
       });
+      el("confirmMonthCancel").addEventListener("click", () => el("confirmMonthModal").classList.add("hidden"));
+      el("confirmMonthOk").addEventListener("click", async () => {
+        el("confirmMonthModal").classList.add("hidden");
+        const monat = STATE.ulActiveMonthStr;
+        await API.setAbschluss(monat, STATE.currentUser.id, true);
+        if (!STATE.abschluesse[monat]) STATE.abschluesse[monat] = {};
+        STATE.abschluesse[monat][STATE.currentUser.id] = true;
+        showNotification(`${formatMonthStr(monat)} abgeschlossen!`);
+        renderUlMonth();
+      });
+
+      // Entry Edit Modal (shared UL + Admin)
+      window.closeEntryModal = () => el("entryEditModal").classList.add("hidden");
+      window.saveEntryModal = async () => {
+        const id = el("entryModalId").value;
+        const datum = el("entryModalDatum").value;
+        const von = el("entryModalVon").value;
+        const bis = el("entryModalBis").value;
+        const stunden = calculateHours(von, bis);
+        if (!datum || !von || !bis || stunden <= 0) return;
+        const updated = { datum, monat: datum.substring(0,7), von, bis, stunden };
+        // Lokal updaten
+        const idx = STATE.entries.findIndex(e => e.id === id);
+        if (idx !== -1) STATE.entries[idx] = {...STATE.entries[idx], ...updated};
+        window.closeEntryModal();
+        if (STATE.isAdmin) renderAdminDashboard(); else updateUlProgressAndList(updated.monat);
+        showNotification("Eintrag aktualisiert");
+        await API.updateEintrag(id, updated);
+      };
 
       // ---- Admin Dashboard ----
       window.switchAdminTab = (tab) => {
         STATE.adminTab = tab;
-        document.querySelectorAll(".admin-tab-btn").forEach((b) => {
-          b.classList.remove("text-primary", "border-primary", "font-bold");
-          b.classList.add("text-gray-500", "border-transparent", "font-medium");
+        document.querySelectorAll(".admin-tab-btn").forEach(b => {
+          b.classList.remove("text-primary","border-primary","font-bold");
+          b.classList.add("text-gray-400","border-transparent","font-medium");
         });
-        const activeBtn = el(`tabBtn-${tab}`);
-        activeBtn.classList.remove("text-gray-500", "border-transparent", "font-medium");
-        activeBtn.classList.add("text-primary", "border-primary", "font-bold");
-
-        ["abrechnung","lohn","jahr","verwaltung"].forEach(t => {
-          el(`adminTab-${t}`).classList.add("hidden");
-          el(`adminTab-${t}`).classList.remove("flex");
+        const active = el(`tabBtn-${tab}`);
+        active.classList.remove("text-gray-400","border-transparent","font-medium");
+        active.classList.add("text-primary","border-primary","font-bold");
+        ["abrechnung","lohn","jahr","verwaltung","einstellungen"].forEach(t => {
+          const e = el(`adminTab-${t}`); if (!e) return;
+          e.classList.add("hidden"); e.classList.remove("flex");
         });
-        el(`adminTab-${tab}`).classList.remove("hidden");
-        el(`adminTab-${tab}`).classList.add("flex");
+        const tabEl = el(`adminTab-${tab}`);
+        if (tabEl) { tabEl.classList.remove("hidden"); tabEl.classList.add("flex"); }
         renderAdminDashboard();
       };
 
@@ -1265,82 +989,91 @@
         else if (STATE.adminTab === "lohn") renderAdminLohn();
         else if (STATE.adminTab === "jahr") renderAdminJahr();
         else if (STATE.adminTab === "verwaltung") renderAdminVerwaltung();
+        else if (STATE.adminTab === "einstellungen") renderAdminEinstellungen();
         if (window.lucide) window.lucide.createIcons();
       };
 
       const renderAdminAbrechnung = () => {
         el("adminSelectedMonthLabel").textContent = formatMonthStr(STATE.adminMonthStr);
-        const monthEntries = STATE.entries.filter((e) => e.monat === STATE.adminMonthStr);
-        const goal = STATE.einstellungen.pflicht_stunden;
+        const monthEntries = STATE.entries.filter(e => e.monat === STATE.adminMonthStr);
+        const goal = STATE.einstellungen.pflicht_stunden || 6.75;
         const listDiv = el("adminUsersList");
+        const activeUL = STATE.ulList.filter(u => !u.pausiert);
 
         if (STATE.ulList.length === 0) {
-          listDiv.innerHTML = '<p class="text-center text-sm text-secondary bg-white p-4">Keine Übungsleiter angelegt.</p>';
+          listDiv.innerHTML = '<p class="text-center text-sm text-secondary p-6">Keine Übungsleiter angelegt.</p>';
+          el("adminAbrechnungStats").textContent = "";
           return;
         }
 
-        const html = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map((ul) => {
-          const hrs = monthEntries.filter((e) => e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
-          let isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
-          let isAbgeschlossen = STATE.abschluesse[STATE.adminMonthStr] && STATE.abschluesse[STATE.adminMonthStr][ul.id];
+        const erreichtCount = activeUL.filter(ul => {
+          const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s,e) => s+e.stunden, 0);
+          return hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+        }).length;
+        el("adminAbrechnungStats").textContent = `${erreichtCount} / ${activeUL.length} erreicht`;
 
-          let statusUI = "", bgLine = "";
+        const html = STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).map(ul => {
+          const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s,e) => s+e.stunden, 0);
+          const isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+          const isAbgeschlossen = STATE.abschluesse[STATE.adminMonthStr] && STATE.abschluesse[STATE.adminMonthStr][ul.id];
+
+          let statusBadge, leftBorder;
           if (hrs >= goal) {
-            statusUI = `<div class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="check" class="w-3 h-3"></i> Ziel erreicht</div>`;
-            bgLine = "border-l-4 border-emerald-400";
+            statusBadge = `<span class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg text-[11px] font-bold"><i data-lucide="check" class="w-3 h-3"></i> Ziel erreicht</span>`;
+            leftBorder = "border-l-4 border-emerald-400";
           } else if (isFreigegeben) {
-            statusUI = `<div class="text-primary bg-primary/10 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="hand-heart" class="w-3 h-3"></i> Zugeständnis (Fehlt: ${formatHours(goal - hrs)}h)</div>`;
-            bgLine = "border-l-4 border-primary";
+            statusBadge = `<span class="inline-flex items-center gap-1 text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-lg text-[11px] font-bold"><i data-lucide="thumbs-up" class="w-3 h-3"></i> Zugeständnis (−${formatHours(goal-hrs)}h)</span>`;
+            leftBorder = "border-l-4 border-primary";
           } else {
-            statusUI = `<div class="text-red-500 bg-red-50 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="triangle-alert" class="w-3 h-3"></i> Nicht erreicht (Fehlt: ${formatHours(goal - hrs)}h)</div>`;
-            bgLine = "border-l-4 border-red-400 opacity-70";
+            statusBadge = `<span class="inline-flex items-center gap-1 text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-lg text-[11px] font-bold"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Fehlt ${formatHours(goal-hrs)}h</span>`;
+            leftBorder = "border-l-4 border-red-300";
           }
 
-          const uEntries = monthEntries.filter((e) => e.uebungsleiter_id === ul.id).sort((a, b) => a.datum.localeCompare(b.datum));
+          const uEntries = monthEntries.filter(e => e.uebungsleiter_id === ul.id).sort((a,b) => a.datum.localeCompare(b.datum));
           const entriesHtml = uEntries.length === 0
-            ? `<div class="text-center text-xs text-gray-400 py-3">Keine Einträge für diesen Monat</div>`
-            : uEntries.map((e) => `
+            ? `<p class="text-xs text-gray-400 py-3 text-center">Keine Einträge</p>`
+            : uEntries.map(e => `
                 <div class="flex justify-between items-center py-2">
-                  <span class="text-xs text-gray-600 font-medium">${new Date(e.datum + 'T12:00:00').toLocaleDateString("de-DE")} <span class="text-gray-400 font-normal">(${e.von}-${e.bis} Uhr)</span></span>
-                  <div class="flex items-center gap-3">
-                    <span class="font-mono text-primary font-bold text-sm">${formatHours(e.stunden)}h</span>
+                  <span class="text-xs text-gray-700 font-medium">${new Date(e.datum+'T12:00:00').toLocaleDateString("de-DE")} <span class="text-gray-400">(${e.von}–${e.bis})</span></span>
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono text-primary font-bold text-xs">${formatHours(e.stunden)}h</span>
                     <button onclick="window.adminEditEntry('${e.id}')" class="text-gray-300 hover:text-primary transition"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
                     <button onclick="window.adminDeleteEntry('${e.id}')" class="text-gray-300 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                   </div>
                 </div>`).join("");
 
           const kulanzToggle = hrs < goal ? `
-            <div class="flex items-center justify-between border-t border-gray-100 pt-3 mt-1">
+            <div class="flex items-center justify-between border-t border-gray-100 pt-3 mt-2">
               <div>
-                <div class="text-[11px] uppercase font-bold text-gray-700 tracking-wider">Auszahlung genehmigen (Zugeständnis)</div>
-                <div class="text-[10px] text-gray-400 mt-0.5">Fehlende Stunden müssen nachgeholt werden.</div>
+                <p class="text-[11px] font-bold text-gray-700 uppercase tracking-wide">Auszahlung genehmigen</p>
+                <p class="text-[10px] text-gray-400">Zugeständnis trotz fehlender Stunden</p>
               </div>
               <label class="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" ${isFreigegeben ? "checked" : ""} onchange="window.adminToggleKulanz('${ul.id}', this.checked)" class="sr-only peer">
-                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                <div class="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-300 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
               </label>
             </div>` : "";
 
           return `
-            <div class="group flex flex-col transition-all border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-              <div class="p-3 cursor-pointer" onclick="document.getElementById('det-${ul.id}').classList.toggle('hidden')">
-                <div class="flex items-center ${bgLine} pl-3 text-sm justify-between">
+            <div class="border-b border-gray-50 last:border-0">
+              <div class="p-3 cursor-pointer hover:bg-gray-50/50 transition" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                <div class="${leftBorder} pl-3 flex justify-between items-center">
                   <div>
-                    <div class="font-bold text-gray-800 leading-tight">
+                    <div class="font-bold text-sm text-gray-800 flex items-center gap-1.5 flex-wrap">
                       ${ul.name}
-                      ${ul.pausiert ? '<span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1 py-0.5 rounded uppercase ml-1">Pausiert</span>' : ""}
-                      ${isAbgeschlossen ? '<span class="text-[10px] font-bold text-gray-600 bg-gray-200 px-1 py-0.5 rounded uppercase ml-1 inline-flex items-center gap-0.5"><i data-lucide="lock" class="w-3 h-3"></i> Abgeschlossen</span>' : ""}
+                      ${ul.pausiert ? '<span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">Pausiert</span>' : ""}
+                      ${isAbgeschlossen ? '<span class="text-[10px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded flex items-center gap-0.5"><i data-lucide="lock" class="w-2.5 h-2.5"></i> Abgeschl.</span>' : ""}
                     </div>
-                    <div class="text-[10px] text-secondary uppercase tracking-wider mt-0.5">${ul.einrichtung}</div>
+                    <div class="text-[10px] text-secondary uppercase tracking-wider mt-0.5">${ul.einrichtung || "–"}</div>
                   </div>
-                  <div class="flex items-center gap-3">
-                    <div class="font-mono text-lg font-bold ${hrs > 0 ? "text-gray-900" : "text-gray-400"}">${formatHours(hrs)}</div>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition"></i>
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono font-bold text-sm ${hrs > 0 ? 'text-gray-800' : 'text-gray-300'}">${formatHours(hrs)}h</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-300"></i>
                   </div>
                 </div>
               </div>
-              <div id="det-${ul.id}" class="hidden flex-col p-3 pt-0 ml-3 mr-3 mt-1">
-                <div class="mb-3">${statusUI}</div>
+              <div class="hidden px-4 pb-4">
+                <div class="mb-3">${statusBadge}</div>
                 <div class="bg-white rounded-xl border border-gray-100 px-3 divide-y divide-gray-50 shadow-sm">${entriesHtml}</div>
                 ${kulanzToggle}
               </div>
@@ -1351,147 +1084,166 @@
 
       const renderAdminLohn = () => {
         el("adminLohnMonthLabel").textContent = formatMonthStr(STATE.adminMonthStr);
-        const monthEntries = STATE.entries.filter((e) => e.monat === STATE.adminMonthStr);
-        const goal = STATE.einstellungen.pflicht_stunden;
+        const monthEntries = STATE.entries.filter(e => e.monat === STATE.adminMonthStr);
+        const goal = STATE.einstellungen.pflicht_stunden || 6.75;
         const listDiv = el("lohnUsersList");
-
-        if (STATE.ulList.length === 0) {
-          listDiv.innerHTML = '<p class="text-center text-sm text-secondary p-4">Keine Übungsleiter angelegt.</p>';
-          return;
-        }
-
-        const html = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map((ul) => {
-          const hrs = monthEntries.filter((e) => e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
-          const isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+        if (STATE.ulList.length === 0) { listDiv.innerHTML = '<p class="text-center text-sm text-secondary p-6">Keine Übungsleiter angelegt.</p>'; return; }
+        listDiv.innerHTML = STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).map(ul => {
+          const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s,e) => s+e.stunden, 0);
+          const ok = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
           return `
-            <div class="flex items-center justify-between p-3 text-sm ${isFreigegeben ? '' : 'opacity-50'}">
+            <div class="flex items-center justify-between p-3 ${ok ? '' : 'opacity-40'}">
               <div>
-                <div class="font-bold text-gray-800">${ul.name}</div>
-                <div class="text-[10px] text-secondary uppercase tracking-wider">${ul.einrichtung}</div>
+                <div class="font-bold text-sm text-gray-800">${ul.name}</div>
+                <div class="text-[10px] text-secondary uppercase tracking-wider">${ul.einrichtung || "–"}</div>
               </div>
-              <div class="flex items-center gap-3">
-                <span class="font-mono font-bold text-primary">${formatHours(hrs)}h</span>
-                ${isFreigegeben
-                  ? '<span class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-bold">Auszahlung: Ja</span>'
-                  : '<span class="text-gray-400 bg-gray-100 px-2 py-0.5 rounded text-xs font-bold">Kein Export</span>'}
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-sm text-primary">${formatHours(hrs)}h</span>
+                ${ok ? '<span class="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg text-xs font-bold">Auszahlung: Ja</span>'
+                     : '<span class="text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg text-xs">Kein Export</span>'}
               </div>
             </div>`;
         }).join("");
-        listDiv.innerHTML = html;
       };
-
-      el("adminLohnPrevBtn").addEventListener("click", () => {
-        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
-        if (--m === 0) { m = 12; y--; }
-        STATE.adminMonthStr = `${y}-${m.toString().padStart(2, "0")}`;
-        renderAdminDashboard();
-      });
-      el("adminLohnNextBtn").addEventListener("click", () => {
-        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
-        if (++m === 13) { m = 1; y++; }
-        STATE.adminMonthStr = `${y}-${m.toString().padStart(2, "0")}`;
-        renderAdminDashboard();
-      });
 
       const renderAdminJahr = () => {
         const sm = STATE.einstellungen.start_monat || 3;
         const ys = STATE.adminYearStart;
         const months = getFiscalMonths(sm, ys);
-        const endM = months[months.length - 1];
-        el("adminSelectedYearLabel").textContent = `${new Date(months[0] + '-01').toLocaleDateString("de-DE", {month:"long"})} ${ys} - ${new Date(endM + '-01').toLocaleDateString("de-DE", {month:"short"})} ${endM.split('-')[0]}`;
-
+        const endM = months[months.length-1];
+        el("adminSelectedYearLabel").textContent = `${new Date(months[0]+'-01').toLocaleDateString("de-DE",{month:"short"})} ${ys} – ${new Date(endM+'-01').toLocaleDateString("de-DE",{month:"short"})} ${endM.split('-')[0]}`;
         el("jahrTableHead").innerHTML =
-          `<th class="px-3 py-2 sticky left-0 bg-gray-50 z-10 border-r border-gray-100 min-w-[160px]">Name</th>` +
-          months.map((m) => {
-            const d = new Date(m + '-01');
-            return `<th class="px-2 py-2 font-semibold text-center">${d.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })}</th>`;
-          }).join("") +
-          `<th class="px-2 py-2 bg-green-50 text-green-700 text-center">Ist</th><th class="px-2 py-2 bg-gray-100 text-center">Soll</th><th class="px-2 py-2 bg-gray-100 text-center">Diff</th>`;
-
-        const goal = STATE.einstellungen.pflicht_stunden;
+          `<th class="px-3 py-2 sticky left-0 bg-gray-50 z-10 border-r border-gray-100 min-w-[150px] text-xs">Name</th>` +
+          months.map(m => `<th class="px-2 py-2 text-center font-semibold">${new Date(m+'-01').toLocaleDateString("de-DE",{month:"short",year:"2-digit"})}</th>`).join("") +
+          `<th class="px-2 py-2 bg-emerald-50 text-emerald-700 text-center">Ist</th><th class="px-2 py-2 bg-gray-100 text-center">Soll</th><th class="px-2 py-2 bg-gray-100 text-center">Diff</th>`;
+        const goal = STATE.einstellungen.pflicht_stunden || 6.75;
         const yearlyGoal = goal * 12;
-        const now = new Date().toISOString().substring(0, 7);
-
-        const html = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map((ul) => {
-          let row = `<td class="px-3 py-2 sticky left-0 bg-white z-10 border-r border-gray-100 font-semibold text-gray-800 text-xs">${ul.name}</td>`;
+        const now = new Date().toISOString().substring(0,7);
+        el("jahrTableBody").innerHTML = STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).map(ul => {
+          let row = `<td class="px-3 py-2 sticky left-0 bg-white z-10 border-r border-gray-100 font-semibold text-xs text-gray-800">${ul.name}</td>`;
           let yearlyTotal = 0;
-          months.forEach((m) => {
-            const hrs = STATE.entries.filter((e) => e.monat === m && e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
+          months.forEach(m => {
+            const hrs = STATE.entries.filter(e => e.monat===m && e.uebungsleiter_id===ul.id).reduce((s,e) => s+e.stunden, 0);
             if (m <= now) yearlyTotal += hrs;
-            const isFreigegeben = hrs >= goal || (STATE.freigaben[m] && STATE.freigaben[m][ul.id]);
-            let classes = m > now ? "text-gray-200" : hrs === 0 ? "text-gray-300" : hrs >= goal ? "text-emerald-600 font-bold" : isFreigegeben ? "text-primary font-bold" : "text-gray-800";
-            row += `<td class="px-2 py-2 font-mono text-center ${classes}">${m <= now ? formatHours(hrs) : '–'}</td>`;
+            const ok = hrs >= goal || (STATE.freigaben[m] && STATE.freigaben[m][ul.id]);
+            const cls = m > now ? "text-gray-200" : hrs===0 ? "text-gray-300" : hrs>=goal ? "text-emerald-600 font-bold" : ok ? "text-primary font-bold" : "text-gray-700";
+            row += `<td class="px-2 py-2 font-mono text-center ${cls}">${m<=now ? formatHours(hrs) : '–'}</td>`;
           });
           const diff = yearlyTotal - yearlyGoal;
-          row += `<td class="px-2 py-2 font-mono font-bold text-green-700 bg-green-50 text-center">${formatHours(yearlyTotal)}</td>`;
+          row += `<td class="px-2 py-2 font-mono font-bold text-emerald-700 bg-emerald-50 text-center">${formatHours(yearlyTotal)}</td>`;
           row += `<td class="px-2 py-2 font-mono text-gray-500 bg-gray-50 text-center">${formatHours(yearlyGoal)}</td>`;
-          row += `<td class="px-2 py-2 font-mono font-bold text-center ${diff >= 0 ? 'text-emerald-600' : 'text-red-500'}">${diff >= 0 ? '+' : '-'}${formatHours(Math.abs(diff)).replace('.', ',')}</td>`;
-          return `<tr>${row}</tr>`;
+          row += `<td class="px-2 py-2 font-mono font-bold text-center ${diff>=0?'text-emerald-600':'text-red-500'}">${diff>=0?'+':''}${formatHours(diff)}</td>`;
+          return `<tr class="hover:bg-gray-50/50">${row}</tr>`;
         }).join("");
-        el("jahrTableBody").innerHTML = html;
       };
 
       const renderAdminVerwaltung = () => {
-        const list = el("adminVerwaltungList");
-        list.innerHTML = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map((ul) => `
+        const search = (el("verwaltungSearch")?.value || "").toLowerCase();
+        const filtered = STATE.ulList
+          .filter(ul => !search || ul.name.toLowerCase().includes(search) || (ul.einrichtung||"").toLowerCase().includes(search))
+          .sort((a,b) => a.name.localeCompare(b.name));
+        el("adminVerwaltungList").innerHTML = filtered.map(ul => `
           <div class="p-4 hover:bg-gray-50 flex justify-between items-center transition cursor-pointer" onclick="window.adminEditUser('${ul.id}')">
             <div>
-              <div class="font-bold text-gray-800">${ul.name}
-                <span class="text-xs font-normal text-gray-400 ml-2 font-mono bg-gray-100 px-1.5 py-0.5 rounded">PIN: ${ul.pin}</span>
-                ${ul.pausiert ? '<span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded uppercase ml-2">Pausiert</span>' : ""}
+              <div class="font-bold text-sm text-gray-800 flex items-center gap-2">
+                ${ul.name}
+                <span class="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">PIN: ${ul.pin}</span>
+                ${ul.pausiert ? '<span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded uppercase">Pausiert</span>' : ""}
               </div>
-              <div class="text-[10px] uppercase text-secondary font-bold tracking-wider mt-0.5">${ul.einrichtung}</div>
+              <div class="text-[10px] uppercase text-secondary font-bold tracking-wider mt-0.5">${ul.einrichtung || "–"}</div>
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300"></i>
-          </div>`).join("");
+          </div>`).join("") || '<p class="text-center text-sm text-secondary p-6">Keine Übungsleiter gefunden.</p>';
       };
+
+      // Verwaltung Search
+      el("verwaltungSearch").addEventListener("input", renderAdminVerwaltung);
+
+      const renderAdminEinstellungen = () => {
+        const s = STATE.einstellungen;
+        el("settingsPflichtStunden").value = s.pflicht_stunden || 6.75;
+        el("settingsStartMonat").value = s.start_monat || 3;
+        el("settingsStartJahr").value = s.start_jahr || 2026;
+        el("settingsCurrentPin").value = "";
+        el("settingsNewPin").value = "";
+        el("settingsErrorMsg").classList.add("hidden");
+      };
+
+      el("settingsSaveBtn").addEventListener("click", async () => {
+        const pflicht = parseFloat(el("settingsPflichtStunden").value);
+        const startMonat = parseInt(el("settingsStartMonat").value);
+        const startJahr = parseInt(el("settingsStartJahr").value);
+        const currentPin = el("settingsCurrentPin").value.trim();
+        const newPin = el("settingsNewPin").value.trim();
+        const errDiv = el("settingsErrorMsg");
+        errDiv.classList.add("hidden");
+
+        if (isNaN(pflicht) || pflicht < 1) { errDiv.textContent = "Bitte gültige Pflichtstunden eingeben."; errDiv.classList.remove("hidden"); return; }
+        if (isNaN(startJahr) || startJahr < 2020) { errDiv.textContent = "Bitte gültiges Startjahr eingeben."; errDiv.classList.remove("hidden"); return; }
+
+        // PIN-Änderung
+        if (newPin) {
+          if (currentPin !== String(STATE.einstellungen.admin_pin || "123456")) {
+            errDiv.textContent = "Aktueller PIN ist falsch."; errDiv.classList.remove("hidden"); return;
+          }
+          if (!/^\d{6}$/.test(newPin)) { errDiv.textContent = "Neuer PIN muss genau 6 Ziffern haben."; errDiv.classList.remove("hidden"); return; }
+        }
+
+        const updated = {
+          ...STATE.einstellungen,
+          pflicht_stunden: pflicht,
+          start_monat: startMonat,
+          start_jahr: startJahr,
+          ...(newPin ? { admin_pin: newPin } : {}),
+        };
+
+        const btn = el("settingsSaveBtn");
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:white;"></div> Speichern...';
+        await API.setEinstellungen(updated);
+        STATE.einstellungen = updated;
+        STATE.adminYearStart = startJahr;
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Einstellungen speichern';
+        if (window.lucide) window.lucide.createIcons();
+        showNotification("Einstellungen gespeichert!", "success");
+        el("settingsCurrentPin").value = "";
+        el("settingsNewPin").value = "";
+      });
 
       // ---- Admin Handlers ----
       window.adminToggleKulanz = async (ulId, checked) => {
-        await API.setFreigabe(STATE.adminMonthStr, ulId, checked);
-        STATE.freigaben = await API.getFreigaben();
-        renderAdminDashboard();
+        if (!STATE.freigaben[STATE.adminMonthStr]) STATE.freigaben[STATE.adminMonthStr] = {};
+        STATE.freigaben[STATE.adminMonthStr][ulId] = checked;
+        renderAdminAbrechnung();
+        if (window.lucide) window.lucide.createIcons();
         showNotification(checked ? "Auszahlung genehmigt" : "Auszahlung widerrufen");
+        await API.setFreigabe(STATE.adminMonthStr, ulId, checked);
       };
 
-      window.adminDeleteEntry = async (entryId) => {
-        if (!confirm("Eintrag sicher löschen?")) return;
-        await API.deleteEintrag(entryId);
-        STATE.entries = await API.getEintraege();
-        renderAdminDashboard();
-        showNotification("Eintrag gelöscht");
+      window.adminDeleteEntry = (id) => {
+        confirmAction("Eintrag löschen?", async () => {
+          STATE.entries = STATE.entries.filter(e => e.id !== id);
+          renderAdminDashboard();
+          showNotification("Eintrag gelöscht");
+          await API.deleteEintrag(id);
+        }, "Löschen", true);
       };
 
-      window.adminEditEntry = (entryId) => {
-        const entry = STATE.entries.find((e) => e.id === entryId);
+      window.adminEditEntry = (id) => {
+        const entry = STATE.entries.find(e => e.id === id);
         if (!entry) return;
-        el("entryModalId").value = entryId;
+        el("entryModalId").value = id;
         el("entryModalDatum").value = entry.datum;
         el("entryModalVon").value = entry.von;
         el("entryModalBis").value = entry.bis;
         el("entryEditModal").classList.remove("hidden");
         if (window.lucide) window.lucide.createIcons();
       };
-      window.closeEntryModal = () => { el("entryEditModal").classList.add("hidden"); };
-      window.saveEntryModal = async () => {
-        const entryId = el("entryModalId").value;
-        const datum = el("entryModalDatum").value;
-        const von = el("entryModalVon").value;
-        const bis = el("entryModalBis").value;
-        const stunden = calculateHours(von, bis);
-        if (!datum || !von || !bis || stunden <= 0) return;
-        await API.updateEintrag(entryId, { datum, monat: datum.substring(0, 7), von, bis, stunden });
-        STATE.entries = await API.getEintraege();
-        window.closeEntryModal();
-        renderAdminDashboard();
-        showNotification("Eintrag aktualisiert");
-      };
 
-      // Admin Add Entry
       el("adminAddEntryBtn").addEventListener("click", () => {
-        const sel = el("adminAddEntryUser");
-        sel.innerHTML = STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).map(u => `<option value="${u.id}">${u.name}</option>`).join("");
-        el("adminAddEntryDatum").value = new Date().toISOString().substring(0, 10);
+        el("adminAddEntryUser").innerHTML = STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+        el("adminAddEntryDatum").value = new Date().toISOString().substring(0,10);
         el("adminAddEntryModal").classList.remove("hidden");
         if (window.lucide) window.lucide.createIcons();
       });
@@ -1503,104 +1255,93 @@
         const bis = el("adminAddEntryBis").value;
         const stunden = calculateHours(von, bis);
         if (!uid || !datum || !von || !bis || stunden <= 0) return;
-        await API.addEintrag({ uebungsleiter_id: uid, datum, monat: datum.substring(0, 7), von, bis, stunden });
-        STATE.entries = await API.getEintraege();
+        const data = { uebungsleiter_id: uid, datum, monat: datum.substring(0,7), von, bis, stunden };
+        const id = await API.addEintrag(data);
+        STATE.entries.push({id, ...data});
         window.closeAdminAddModal();
         renderAdminDashboard();
         showNotification("Eintrag hinzugefügt");
       };
 
-      el("adminPrevMonthBtn").addEventListener("click", () => {
-        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
-        if (--m === 0) { m = 12; y--; }
-        STATE.adminMonthStr = `${y}-${m.toString().padStart(2, "0")}`;
+      // Month Navigation (Admin)
+      const shiftAdminMonth = (delta) => {
+        let [y,m] = STATE.adminMonthStr.split("-").map(Number);
+        m += delta;
+        if (m > 12) { m = 1; y++; }
+        if (m < 1) { m = 12; y--; }
+        STATE.adminMonthStr = `${y}-${String(m).padStart(2,"0")}`;
         renderAdminDashboard();
-      });
-      el("adminNextMonthBtn").addEventListener("click", () => {
-        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
-        if (++m === 13) { m = 1; y++; }
-        STATE.adminMonthStr = `${y}-${m.toString().padStart(2, "0")}`;
-        renderAdminDashboard();
-      });
+      };
+      el("adminPrevMonthBtn").addEventListener("click", () => shiftAdminMonth(-1));
+      el("adminNextMonthBtn").addEventListener("click", () => shiftAdminMonth(1));
+      el("adminLohnPrevBtn").addEventListener("click", () => shiftAdminMonth(-1));
+      el("adminLohnNextBtn").addEventListener("click", () => shiftAdminMonth(1));
       el("adminPrevYearBtn").addEventListener("click", () => { STATE.adminYearStart--; renderAdminDashboard(); });
       el("adminNextYearBtn").addEventListener("click", () => { STATE.adminYearStart++; renderAdminDashboard(); });
 
       // ---- CSV Exports ----
       const exportCsv = (onlyAuszahlung) => {
-        const goal = STATE.einstellungen.pflicht_stunden;
+        const goal = STATE.einstellungen.pflicht_stunden || 6.75;
         let csv = onlyAuszahlung ? "Vorname;Name;Klinik;Gesamtstunden;Auszahlung\n" : "Einrichtung;Vorname;Name;Status;Gesamtstunden\n";
-        const monthEntries = STATE.entries.filter((e) => e.monat === STATE.adminMonthStr);
-        STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).forEach((ul) => {
-          const hrs = monthEntries.filter((e) => e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
-          let isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
-          if (onlyAuszahlung && !isFreigegeben) return;
-          const names = ul.name.split(" "); const lastName = names.pop() || ""; const firstName = names.join(" ") || "";
-          const clean = (s) => `"${(s || "").replace(/"/g, '""')}"`;
-          const hrsStr = formatHours(hrs).replace(".", ",");
-          if (onlyAuszahlung) {
-            csv += `${clean(firstName)};${clean(lastName)};${clean(ul.einrichtung)};${hrsStr};Ja\n`;
-          } else {
-            let status = isFreigegeben ? (hrs >= goal ? "Ziel erreicht" : "Zugeständnis") : "Nicht erreicht";
-            csv += `${clean(ul.einrichtung)};${clean(firstName)};${clean(lastName)};${status};${hrsStr}\n`;
-          }
+        const monthEntries = STATE.entries.filter(e => e.monat === STATE.adminMonthStr);
+        STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).forEach(ul => {
+          const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s,e) => s+e.stunden, 0);
+          const ok = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+          if (onlyAuszahlung && !ok) return;
+          const names = ul.name.split(" "); const last = names.pop()||""; const first = names.join(" ")||"";
+          const q = s => `"${(s||"").replace(/"/g,'""')}"`;
+          const hStr = formatHours(hrs).replace(".",",");
+          csv += onlyAuszahlung
+            ? `${q(first)};${q(last)};${q(ul.einrichtung)};${hStr};Ja\n`
+            : `${q(ul.einrichtung)};${q(first)};${q(last)};${ok?(hrs>=goal?"Ziel erreicht":"Zugeständnis"):"Nicht erreicht"};${hStr}\n`;
         });
-        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+        const blob = new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8;"});
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url; link.download = `MSBW_${onlyAuszahlung ? "Lohnbuchhaltung" : "Alle"}_${STATE.adminMonthStr}.csv`;
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        const a = document.createElement("a");
+        a.href = url; a.download = `MSBW_${onlyAuszahlung?"Lohn":"Alle"}_${STATE.adminMonthStr}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        showNotification("CSV exportiert");
       };
 
       const exportCsvJahr = () => {
         const sm = STATE.einstellungen.start_monat || 3;
         const ys = STATE.adminYearStart;
-        const goal = STATE.einstellungen.pflicht_stunden;
-        const yearlyGoal = goal * 12;
+        const goal = STATE.einstellungen.pflicht_stunden || 6.75;
         const months = getFiscalMonths(sm, ys);
-        let csv = "Vorname;Name;Einrichtung;";
-        months.forEach(m => {
-          const d = new Date(m + '-01');
-          csv += `${d.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })};`;
-        });
-        csv += "Soll Std. Jahr;Ist Std. Jahr;Differenz\n";
-        STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).forEach((ul) => {
-          const names = ul.name.split(" "); const lastName = names.pop() || ""; const firstName = names.join(" ") || "";
-          const clean = (s) => `"${(s || "").replace(/"/g, '""')}"`;
-          let row = `${clean(firstName)};${clean(lastName)};${clean(ul.einrichtung)};`;
-          let yearlyTotal = 0;
-          months.forEach((m) => {
-            const hrs = STATE.entries.filter((e) => e.monat === m && e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
-            yearlyTotal += hrs;
-            row += `${formatHours(hrs).replace(".", ",")};`;
-          });
-          let diff = yearlyTotal - yearlyGoal;
-          let diffStr = (diff > 0 ? "+" : "") + formatHours(diff).replace(".", ",");
-          row += `${formatHours(yearlyGoal).replace(".", ",")};${formatHours(yearlyTotal).replace(".", ",")};${diffStr}\n`;
+        let csv = "Vorname;Name;Einrichtung;" + months.map(m => new Date(m+'-01').toLocaleDateString("de-DE",{month:"short",year:"2-digit"})).join(";") + ";Soll;Ist;Diff\n";
+        STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).forEach(ul => {
+          const names = ul.name.split(" "); const last = names.pop()||""; const first = names.join(" ")||"";
+          const q = s => `"${(s||"").replace(/"/g,'""')}"`;
+          let row = `${q(first)};${q(last)};${q(ul.einrichtung)};`;
+          let total = 0;
+          months.forEach(m => { const h = STATE.entries.filter(e => e.monat===m && e.uebungsleiter_id===ul.id).reduce((s,e) => s+e.stunden, 0); total += h; row += formatHours(h).replace(".",",")+";"; });
+          const diff = total - goal*12;
+          row += `${formatHours(goal*12).replace(".",",")};${formatHours(total).replace(".",",")};${(diff>=0?"+":"")+formatHours(diff).replace(".",",")}\n`;
           csv += row;
         });
-        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+        const blob = new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8;"});
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url; link.download = `MSBW_Jahresübersicht_${ys}-${ys + 1}.csv`;
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        const a = document.createElement("a"); a.href = url; a.download = `MSBW_Jahr_${ys}-${ys+1}.csv`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        showNotification("Jahres-CSV exportiert");
       };
 
-      el("exportCsvBtnJahr").addEventListener("click", () => exportCsvJahr());
+      el("exportCsvBtnJahr").addEventListener("click", exportCsvJahr);
       el("exportCsvBtnLohn").addEventListener("click", () => exportCsv(true));
       el("exportCsvBtnAlle").addEventListener("click", () => exportCsv(false));
 
       // ---- User Management Modal ----
       window.adminEditUser = (id) => {
-        const user = STATE.ulList.find((u) => u.id === id);
+        const user = STATE.ulList.find(u => u.id === id);
         el("ueModalId").value = id || "";
-        el("ueModalName").value = user ? user.name : "";
-        el("ueModalEinrichtung").value = user ? user.einrichtung : "";
-        el("ueModalPin").value = user ? user.pin : "";
-        el("ueModalTelefon").value = user ? user.telefon || "" : "";
-        el("ueModalEmail").value = user ? user.email || "" : "";
-        el("ueModalStatus").value = user && user.pausiert ? "pausiert" : "aktiv";
-        el("ueModalAdresse").value = user ? user.adresse || "" : "";
-        el("ueModalNotizen").value = user ? user.notizen || "" : "";
+        el("ueModalName").value = user?.name || "";
+        el("ueModalEinrichtung").value = user?.einrichtung || "";
+        el("ueModalPin").value = user?.pin || "";
+        el("ueModalTelefon").value = user?.telefon || "";
+        el("ueModalEmail").value = user?.email || "";
+        el("ueModalStatus").value = user?.pausiert ? "pausiert" : "aktiv";
+        el("ueModalAdresse").value = user?.adresse || "";
+        el("ueModalNotizen").value = user?.notizen || "";
         el("ueModalTitle").textContent = user ? "Übungsleiter bearbeiten" : "Neuen anlegen";
         el("ueModalDeleteBtn").classList.toggle("hidden", !user);
         el("ueModalErrorName").classList.add("hidden");
@@ -1612,35 +1353,36 @@
         const id = el("ueModalId").value;
         const name = el("ueModalName").value.trim();
         const pin = el("ueModalPin").value.trim();
-        if (!name) { el("ueModalErrorName").classList.remove("hidden"); return; }
-        if (!/^\d{4}$/.test(pin)) { el("ueModalErrorName").textContent = "PIN muss 4 Ziffern haben!"; el("ueModalErrorName").classList.remove("hidden"); return; }
-        const data = {
-          name, einrichtung: el("ueModalEinrichtung").value, pin,
-          telefon: el("ueModalTelefon").value, email: el("ueModalEmail").value,
-          pausiert: el("ueModalStatus").value === "pausiert",
-          adresse: el("ueModalAdresse").value, notizen: el("ueModalNotizen").value,
-        };
-        if (id) await API.updateUebungsleiter(id, data);
-        else await API.addUebungsleiter(data);
-        STATE.ulList = await API.getUebungsleiterList();
+        if (!name) { el("ueModalErrorName").textContent = "Pflichtfeld!"; el("ueModalErrorName").classList.remove("hidden"); return; }
+        if (!/^\d{4}$/.test(pin)) { el("ueModalErrorName").textContent = "PIN: 4 Ziffern!"; el("ueModalErrorName").classList.remove("hidden"); return; }
+        const data = { name, einrichtung: el("ueModalEinrichtung").value, pin, telefon: el("ueModalTelefon").value, email: el("ueModalEmail").value, pausiert: el("ueModalStatus").value === "pausiert", adresse: el("ueModalAdresse").value, notizen: el("ueModalNotizen").value };
+        if (id) {
+          await API.updateUebungsleiter(id, data);
+          const idx = STATE.ulList.findIndex(u => u.id === id);
+          if (idx !== -1) STATE.ulList[idx] = {id, ...data};
+        } else {
+          const newId = await API.addUebungsleiter(data);
+          STATE.ulList.push({id: newId, ...data});
+        }
         window.closeUserModal();
         renderAdminDashboard();
         showNotification("Übungsleiter gespeichert");
       };
-      window.deleteUserModal = async () => {
-        if (!confirm("Übungsleiter wirklich löschen?")) return;
-        const id = el("ueModalId").value;
-        await API.deleteUebungsleiter(id);
-        STATE.ulList = await API.getUebungsleiterList();
-        window.closeUserModal();
-        renderAdminDashboard();
-        showNotification("Übungsleiter gelöscht");
+      window.deleteUserModal = () => {
+        confirmAction("Übungsleiter wirklich löschen? Alle zugehörigen Einträge bleiben erhalten.", async () => {
+          const id = el("ueModalId").value;
+          await API.deleteUebungsleiter(id);
+          STATE.ulList = STATE.ulList.filter(u => u.id !== id);
+          window.closeUserModal();
+          renderAdminDashboard();
+          showNotification("Übungsleiter gelöscht");
+        }, "Löschen", true);
       };
 
-      // ---- Boot ----
+      // ---- Start ----
       window.onload = () => {
         if (window.lucide) window.lucide.createIcons();
-        setTimeout(initApp, 600);
+        setTimeout(initApp, 400);
       };
     </script>
   </body>
