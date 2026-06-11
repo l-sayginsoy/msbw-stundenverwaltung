@@ -127,6 +127,7 @@
         >
           <div class="loader"></div>
           <span class="text-secondary text-sm">Lade Daten...</span>
+          <div id="loadingError" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700 max-w-xs text-center"></div>
         </div>
 
         <!-- 2. Role Select View -->
@@ -861,34 +862,16 @@
       </main>
     </div>
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-      import { getDatabase, ref, get, set, push, update, remove, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyA6_xNOj1hO7NwZIZBMrsGkxBWQccD-TU0",
-        authDomain: "msbw-stundenverwaltung.firebaseapp.com",
-        databaseURL: "https://msbw-stundenverwaltung-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "msbw-stundenverwaltung",
-        storageBucket: "msbw-stundenverwaltung.firebasestorage.app",
-        messagingSenderId: "410211949596",
-        appId: "1:410211949596:web:398efcd6f7795d208d13d9",
-      };
-
+    <script>
       const USE_MOCK = window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1";
 
-      let fbdb = null;
-      if (!USE_MOCK) {
-        const app = initializeApp(firebaseConfig);
-        fbdb = getDatabase(app);
-      }
-
-      const fbGet = async (path) => { const snap = await get(ref(fbdb, path)); return snap.exists() ? snap.val() : null; };
-      const fbSet = async (path, val) => set(ref(fbdb, path), val);
-      const fbPush = async (path, val) => { const r = await push(ref(fbdb, path), val); return r.key; };
-      const fbUpdate = async (path, val) => update(ref(fbdb, path), val);
-      const fbRemove = async (path) => remove(ref(fbdb, path));
+      const FB_URL = "https://msbw-stundenverwaltung-default-rtdb.europe-west1.firebasedatabase.app";
+      const fbGet = async (path) => { const r = await fetch(FB_URL + "/" + path + ".json"); return r.ok ? r.json() : null; };
+      const fbSet = async (path, val) => { await fetch(FB_URL + "/" + path + ".json", {method:"PUT", body:JSON.stringify(val)}); };
+      const fbPush = async (path, val) => { const r = await fetch(FB_URL + "/" + path + ".json", {method:"POST", body:JSON.stringify(val)}); const d = await r.json(); return d.name; };
+      const fbUpdate = async (path, val) => { await fetch(FB_URL + "/" + path + ".json", {method:"PATCH", body:JSON.stringify(val)}); };
+      const fbRemove = async (path) => { await fetch(FB_URL + "/" + path + ".json", {method:"DELETE"}); };
 
       let dbMockState = { einstellungen: null, uebungsleiter: {}, eintraege: {}, freigaben: {}, abschluesse: {} };
       if (USE_MOCK) {
@@ -1037,25 +1020,42 @@
 
       const logout = () => { STATE.currentUser = null; STATE.isAdmin = false; switchView("roleSelectView"); };
 
+      const showLoadingError = (msg) => {
+        const errDiv = document.getElementById("loadingError");
+        if (errDiv) { errDiv.textContent = msg; errDiv.classList.remove("hidden"); }
+        console.error("[MSBW] " + msg);
+      };
+
       const initApp = async () => {
-        STATE.einstellungen = await API.getEinstellungen();
-        if (!STATE.einstellungen) {
-          // Standardwerte setzen falls keine Einstellungen vorhanden
-          STATE.einstellungen = { admin_pin: "123456", pflicht_stunden: 6.75, start_monat: 3, start_jahr: 2026 };
-          await API.setEinstellungen(STATE.einstellungen);
+        try {
+          console.log("[MSBW] initApp start, USE_MOCK=" + USE_MOCK);
+          STATE.einstellungen = await API.getEinstellungen();
+          console.log("[MSBW] einstellungen geladen:", JSON.stringify(STATE.einstellungen));
+          if (!STATE.einstellungen) {
+            STATE.einstellungen = { admin_pin: "123456", pflicht_stunden: 6.75, start_monat: 3, start_jahr: 2026 };
+            await API.setEinstellungen(STATE.einstellungen);
+          }
+          loadDataAndStart();
+        } catch(e) {
+          showLoadingError("Fehler beim Laden: " + e.message);
         }
-        loadDataAndStart();
       };
 
       const loadDataAndStart = async () => {
+        try {
+        console.log("[MSBW] loadDataAndStart start");
         STATE.ulList = await API.getUebungsleiterList();
+        console.log("[MSBW] UL geladen:", STATE.ulList.length);
         STATE.entries = await API.getEintraege();
+        console.log("[MSBW] Einträge geladen:", STATE.entries.length);
         STATE.freigaben = await API.getFreigaben();
         STATE.abschluesse = await API.getAbschluesse();
         STATE.adminYearStart = STATE.einstellungen.start_jahr || new Date().getFullYear();
+        console.log("[MSBW] switchView roleSelectView");
         if (STATE.currentUser) renderUlDashboard();
         else if (STATE.isAdmin) renderAdminDashboard();
         else switchView("roleSelectView");
+        } catch(e) { showLoadingError("Fehler beim Laden: " + e.message); }
       };
 
       // ---- Setup ----
