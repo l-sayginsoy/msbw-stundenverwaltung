@@ -1,0 +1,10 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "src/**", "tsconfig.json", "vite.config.ts", "temp.js", "claude_prompt.txt", "metadata.json"],
+    "rewrites": [{"source": "**", "destination": "/index.html"}]
+  },
+  "database": {
+    "rules": "database.rules.json"
+  }
+}

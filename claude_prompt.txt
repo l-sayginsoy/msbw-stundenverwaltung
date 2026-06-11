@@ -1,0 +1,46 @@
+Baue eine moderne Web-Anwendung für die MSBW (Pädiatrie/Krankenhaus) zur Verwaltung von Übungsleiter-Stunden.
+
+## Technologien
+- Single-Page Application (SPA) in einer einzigen `index.html`-Datei.
+- Styling: Tailwind CSS (über CDN).
+- Icons: Lucide Icons.
+- Keine Backend-Datenbank nötig (Mock-Daten im Local Storage oder in-memory reichen für einen Prototyp), aber die Datenstruktur und API-Aufrufe sollten asynchron vorbereitet sein, um sie später durch ein echtes Backend zu ersetzen.
+
+## Benutzerrollen & Funktionen
+Die App hat zwei Ansichten/Rollen: Übungsleiter (UL) und Administrator.
+
+### 1. Übungsleiter (UL) Dashboard
+- **Login:** Es gibt keine Dropdown-Auswahl mehr beim Login! Der Nutzer gibt seinen **Vor- und Nachnamen** in ein Textfeld ein und dazu einen **4-stelligen PIN**-Code.
+- **Dashboard Kopf:** Anzeige von "Hallo, [Vorname]" und der "Einrichtung/Krankenhaus" des UL (in einer großen, sehr gut lesbaren Schrift, auch für Smartphones optimiert).
+- **Fortschritt:** Eine Progress-Bar zeigt die in diesem Monat erfassten Stunden im Verhältnis zu einem monatlichen Pflichtziel.
+- **Eintrag hinzufügen:** Formularkomponenten zur Eingabe von:
+  - Datum
+  - Startuhrzeit (Von)
+  - Enduhrzeit (Bis)
+  Die Stunden werden automatisch errechnet (z.B. als Dezimalzahl, 0.5 Schritte). Die Inputs und Buttons sollen für mobile Touch-Bedienung extra groß dimensioniert sein.
+- **Letzte Einträge (Liste):** Anzeige aller erfassten Zeiten dieses aktiven Monats in sehr großen und gut lesbaren Schriftgrößen für Datum und Dauer, sowie der dazugehörigen Uhrzeit.
+- **Monatlicher Workflow:**
+  - Standardmäßig öffnet sich der aktuelle Monat bzw. der früheste noch offene Monat, wenn man sich einloggt.
+  - Oben rechts am Dashboard kann man per Pfeiltasten den (angezeigten) Monat navigieren.
+  - **Monatsabschluss:** Ist ein Monat vollständig befüllt, kann der UL auf "Monat abschließen" klicken. Danach ist dieser Monat für den UL read-only (keine neuen Einträge oder Bearbeitung mehr möglich).
+
+### 2. Admin Dashboard
+- **Login:** Gesichert mit einem Master-Passwort.
+- **Übersicht (Monats-Ansicht):** Der Admin navigiert pro Monat (z.B. "Juni 2026") und sieht eine zusammenfassende Liste aller registrierten Übungsleiter.
+- **Status pro Übungsleiter:** Für jeden UL sieht der Admin die im Monat geleisteten Stunden und ob das Ziel erreicht wurde. Es gibt farbige Status-Indikatoren:
+  - Rot = Ziel noch nicht erreicht
+  - Grün = Ziel erreicht
+  - Blau = "Zugeständnis" (Admin kann per Klick den Monat als 'freigegeben/erlaubt' markieren, wenn die Fehlstunden später nachgeholt werden).
+  - Indikator "Pausiert" (Wenn der Admin einen UL als pausiert markiert hat).
+  - Indikator "Abgeschlossen" (Wenn der UL den Monat selbst abgerechnet hat).
+- **Editier-Rechte:** Der Admin kann die Einzeleinträge der ULs einsehen, fremde Zeiten bearbeiten oder löschen.
+- **Übungsleiter-Verwaltung:** Der Admin kann neue Übungsleiter anlegen oder bestehende editieren (Name, Einrichtung, PIN, Telefon, Email, Adresse, Notizen, Aktiv/Pausiert-Status).
+- **Einstellungen:** Der Admin legt das generelle monatliche Pflichtziel (z.B. 10 Stunden) sowie das Admin-Masterpasswort fest.
+- **Export:** Eine einfache CSV-Export Funktion, um alle aktuellen Daten für ein Excel-Reporting herunterzuladen.
+
+## UI/UX Design Fokus
+- Absolute "Mobile-first" Herangehensweise mit extragroßen Touch-Targets.
+- Die Typografie (insbesondere für Datum, Name, Einrichtung, Arbeitszeiten) MUSS ausreichend groß und barrierefrei sein (z.B. text-2xl bis text-4xl für signifikante Werte). 
+- Farbschema: Primärfarbe `#1D898D` (Teal/Türkis), sehr moderner, aufgeräumter Look mit viel Whitespace, Schatten (Shadows) und Rounded Corners.
+
+Bitte entwickle ein vollständiges Proof-of-Concept System mit sauberem Code, das diese Funktionen im Browser abbildet.

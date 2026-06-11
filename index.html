@@ -1,0 +1,1760 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MSBW Stundenverwaltung</title>
+    <link rel="icon" type="image/png" href="/public/Icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#2A9D8F",
+              secondary: "#8A8A8A",
+              bglight: "#F4F4F4",
+              bgdark: "#FFFFFF",
+            },
+          },
+        },
+      };
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      body {
+        background-color: #1a1a1a;
+        color: #333333;
+        font-family: 'Inter', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body.light-bg {
+        background-color: #f4f4f4;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .loader {
+        border: 3px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 3px solid #2a9d8f;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="app"
+      class="max-w-xl mx-auto min-h-screen bg-bglight flex flex-col shadow-2xl relative border-x border-gray-200"
+    >
+      <!-- Top Header -->
+      <header
+        class="bg-primary text-white px-6 py-5 flex justify-between items-center z-10 sticky top-0"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+            <img src="/public/Icon.png" alt="MSBW Logo" class="w-8 h-8 object-contain" />
+          </div>
+          <div>
+            <h1 class="text-xl font-semibold tracking-tight leading-tight">
+              MSBW
+            </h1>
+            <p class="text-xs opacity-90 m-0 p-0">Stundenverwaltung</p>
+          </div>
+        </div>
+        <button
+          id="logoutBtn"
+          class="hidden px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm transition-colors border border-white/20 font-medium"
+        >
+          Logout
+        </button>
+      </header>
+
+      <!-- Bestätigungs-Modal für Monatsabschluss -->
+      <div id="confirmMonthModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full animate-fade-in">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+              <i data-lucide="lock" class="w-5 h-5 text-red-500"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800">Monat abschließen?</h3>
+          </div>
+          <p class="text-sm text-gray-600 mb-6" id="confirmMonthModalText">Möchtest du diesen Monat wirklich abschließen? Danach können keine Zeiten mehr bearbeitet werden.</p>
+          <div class="flex gap-3">
+            <button id="confirmMonthCancel" class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition">Abbrechen</button>
+            <button id="confirmMonthOk" class="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-black transition">Ja, abschließen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <main class="flex-1 p-4 overflow-y-auto w-full relative" id="mainContent">
+        <!-- Loading Spinner -->
+        <div
+          id="loadingView"
+          class="flex flex-col items-center justify-center h-40 gap-3"
+        >
+          <div class="loader"></div>
+          <span class="text-secondary text-sm">Lade Daten...</span>
+        </div>
+
+        <!-- 1. Setup View -->
+        <div
+          id="setupView"
+          class="hidden flex-col gap-6 animate-fade-in my-6 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm"
+        >
+          <h2 class="text-2xl font-bold text-gray-800 border-b pb-2">
+            Erst-Setup
+          </h2>
+          <p class="text-sm text-secondary">
+            Willkommen! Bitte lege den Admin-PIN und die Grundeinstellungen fest.
+          </p>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">Admin PIN festlegen <span class="font-normal text-secondary">(6 Ziffern)</span></label>
+            <input
+              type="password"
+              inputmode="numeric"
+              id="setupAdminPin"
+              class="p-3 border border-gray-200 rounded-xl text-lg bg-white focus:outline-primary transition text-center tracking-widest"
+              maxlength="6"
+              placeholder="••••••"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">PIN bestätigen</label>
+            <input
+              type="password"
+              inputmode="numeric"
+              id="setupAdminPin2"
+              class="p-3 border border-gray-200 rounded-xl text-lg bg-white focus:outline-primary transition text-center tracking-widest"
+              maxlength="6"
+              placeholder="••••••"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">Monatliche Pflichtstunden pro Leiter</label>
+            <input
+              type="number"
+              id="setupPflichtStunden"
+              value="6.75"
+              step="0.25"
+              min="0.5"
+              max="40"
+              class="p-3 border border-gray-200 rounded-xl text-base bg-white focus:outline-primary transition"
+            />
+            <p class="text-xs text-secondary">z.B. 6.75 für 6 Stunden 45 Minuten</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-semibold text-gray-700">Startmonat Fiskaljahr</label>
+              <select id="setupStartMonat" class="p-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-primary transition">
+                <option value="1">Januar</option><option value="2">Februar</option>
+                <option value="3" selected>März</option><option value="4">April</option>
+                <option value="5">Mai</option><option value="6">Juni</option>
+                <option value="7">Juli</option><option value="8">August</option>
+                <option value="9">September</option><option value="10">Oktober</option>
+                <option value="11">November</option><option value="12">Dezember</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-semibold text-gray-700">Startjahr</label>
+              <input type="number" id="setupStartJahr" value="2026" min="2020" max="2040"
+                class="p-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-primary transition" />
+            </div>
+          </div>
+
+          <div
+            class="flex flex-col gap-2 bg-bglight p-4 rounded-xl border border-gray-100"
+          >
+            <label
+              class="text-sm font-semibold text-gray-700 flex items-center gap-2"
+            >
+              <input
+                type="checkbox"
+                id="setupSeedData"
+                class="w-4 h-4 text-primary rounded"
+                checked
+              />
+              Test-Daten (Ü-Leiter) generieren
+            </label>
+            <p class="text-xs text-secondary pl-6">
+              Erstellt automatisch ein paar Demo Übungsleiter zum Testen.
+            </p>
+          </div>
+
+          <button
+            id="setupSubmitBtn"
+            class="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition mt-2"
+          >
+            Setup abschließen
+          </button>
+          <div
+            id="setupError"
+            class="text-red-500 text-sm hidden font-medium text-center bg-red-50 p-2 rounded"
+          ></div>
+        </div>
+
+        <!-- 2. Role Select View -->
+        <div
+          id="roleSelectView"
+          class="hidden flex-col gap-6 animate-fade-in my-10 px-2"
+        >
+          <h2 class="text-2xl font-bold text-center text-gray-800">
+            Login Bereich
+          </h2>
+          <p class="text-center text-secondary text-sm mb-2">
+            Bitte wähle deinen Zugang.
+          </p>
+
+          <button
+            id="navUlLoginBtn"
+            class="bg-white border-2 border-primary text-primary py-8 rounded-2xl shadow-sm hover:bg-primary hover:text-white transition flex flex-col items-center gap-3 group"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-white/20 transition"
+            >
+              <i data-lucide="user" class="w-8 h-8"></i>
+            </div>
+            <span class="text-xl font-bold">Übungsleiter/in</span>
+          </button>
+
+          <button
+            id="navAdminLoginBtn"
+            class="bg-white border border-gray-200 text-gray-600 py-4 rounded-xl shadow-sm hover:bg-gray-50 transition mt-4 flex items-center justify-center gap-2"
+          >
+            <i data-lucide="shield" class="w-5 h-5"></i>
+            <span class="font-medium">Admin Zugang</span>
+          </button>
+        </div>
+
+        <!-- 3. Ü-Leiter Login View -->
+        <div
+          id="ulLoginView"
+          class="hidden flex-col gap-5 animate-fade-in my-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm"
+        >
+          <button
+            id="backToRoleFromUlBtn"
+            class="text-secondary flex items-center gap-1 text-sm hover:text-primary self-start transition"
+          >
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Zurück
+          </button>
+          <h2 class="text-2xl font-bold text-gray-800">Übungsleiter Login</h2>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">Vor- und Nachname</label>
+            <input
+              type="text"
+              id="ulLoginName"
+              placeholder="z.B. Max Mustermann"
+              class="p-3 border border-gray-200 rounded-xl bg-white focus:outline-primary transition text-gray-800 font-medium"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700"
+              >Dein 4-stelliger PIN</label
+            >
+            <input
+              type="password"
+              inputmode="numeric"
+              id="ulLoginPin"
+              class="p-3 border border-gray-200 rounded-xl text-lg bg-white tracking-widest focus:outline-primary transition text-center"
+              maxlength="4"
+              placeholder="••••"
+            />
+          </div>
+
+          <button
+            id="ulLoginSubmitBtn"
+            class="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition mt-2"
+          >
+            Einloggen
+          </button>
+          <div
+            id="ulLoginError"
+            class="text-red-500 text-sm hidden bg-red-50 p-2 rounded border border-red-100 font-medium text-center"
+          ></div>
+        </div>
+
+        <!-- 4. Ü-Leiter Dashboard View -->
+        <div
+          id="ulDashboardView"
+          class="hidden flex-col gap-6 animate-fade-in my-2 p-2"
+        >
+          <!-- Welcome Header -->
+          <div class="mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 tracking-tight" id="ulDashName">
+              Max Mustermann
+            </h2>
+            <p class="text-lg font-medium text-gray-500" id="ulDashEinrichtung">
+              Krankenhaus XY
+            </p>
+          </div>
+
+          <!-- Progress Widget -->
+          <div class="bg-bglight p-5 rounded-2xl mb-4">
+            <div class="flex justify-between items-end mb-2">
+              <span
+                class="text-2xl font-bold text-primary"
+                id="ulDashHoursCount"
+                >0
+                <span class="text-lg text-gray-400 font-normal ml-0.5"
+                  >/ 0h</span
+                ></span
+              >
+              <span
+                class="text-base text-primary font-extrabold uppercase tracking-widest"
+                id="ulDashMonthStatus"
+                >Monat</span
+              >
+            </div>
+            <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+              <div
+                id="ulDashProgressBar"
+                class="bg-primary h-full w-[0%] transition-all duration-500"
+              ></div>
+            </div>
+            <p
+              class="text-sm mt-3 text-secondary font-medium"
+              id="ulDashGoalMsg"
+            >
+              Noch X Stunden bis zum Pflichtziel
+            </p>
+          </div>
+
+          <!-- Add Entry Form -->
+          <div class="space-y-4 mb-4 px-1" id="ulAddEntryBlock">
+            <label
+              class="text-sm uppercase font-bold text-secondary tracking-widest flex justify-between items-center"
+            >
+              <span>Eintrag hinzufügen</span>
+              <span
+                id="newEntryPreview"
+                class="text-primary font-bold text-sm bg-bglight px-2 py-0.5 rounded"
+                >0.0h</span
+              >
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <input
+                type="date"
+                id="newEntryDatum"
+                class="col-span-2 p-3 border border-gray-200 rounded-lg text-base bg-white focus:outline-primary transition"
+              />
+              <div class="relative mt-2">
+                <span
+                  class="absolute top-1.5 left-3 text-xs font-bold text-secondary uppercase"
+                  >Von</span
+                >
+                <input
+                  type="time"
+                  id="newEntryVon"
+                  class="w-full pt-6 pb-2 px-3 border border-gray-200 rounded-lg text-lg font-medium bg-white focus:outline-primary transition"
+                />
+              </div>
+              <div class="relative mt-2">
+                <span
+                  class="absolute top-1.5 left-3 text-xs font-bold text-secondary uppercase"
+                  >Bis</span
+                >
+                <input
+                  type="time"
+                  id="newEntryBis"
+                  class="w-full pt-6 pb-2 px-3 border border-gray-200 rounded-lg text-lg font-medium bg-white focus:outline-primary transition"
+                />
+              </div>
+            </div>
+            <button
+              id="addEntryBtn"
+              class="w-full py-4 text-lg mt-2 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex justify-center items-center gap-2"
+            >
+              Eintrag speichern
+            </button>
+            <div
+              id="addEntryMsg"
+              class="text-sm font-medium hidden text-center"
+            ></div>
+          </div>
+
+          <!-- Month closed notice -->
+          <div id="ulMonthClosedNotice" class="hidden bg-gray-100 border border-gray-200 rounded-xl p-4 text-center text-sm text-secondary flex items-center justify-center gap-2 mb-4">
+            <i data-lucide="lock" class="w-4 h-4"></i> Dieser Monat wurde abgeschlossen.
+          </div>
+
+          <!-- Recent Entries -->
+          <div class="flex-1 overflow-hidden px-1">
+            <p
+              class="uppercase font-bold text-secondary tracking-widest mb-4 flex justify-between items-center"
+            >
+              <span class="text-sm">Letzte Einträge</span>
+              <span class="text-sm text-secondary font-bold uppercase tracking-widest" id="ulDashListMonthLabel"></span>
+            </p>
+            <div id="ulEntriesList" class="space-y-3 mb-4">
+              <div
+                class="text-center text-sm text-secondary p-4 bg-bglight rounded-xl"
+              >
+                Keine Einträge in diesem Monat.
+              </div>
+            </div>
+
+            <button
+              id="ulSubmitMonthBtn"
+              class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-black active:scale-95 transition-transform flex justify-center items-center gap-2 mt-4"
+            >
+              <i data-lucide="lock" class="w-4 h-4"></i> Monat abschließen
+            </button>
+            <p class="text-xs text-secondary mt-2 text-center">
+              Nach dem Abschluss können keine Zeiten mehr für diesen Monat
+              bearbeitet werden.
+            </p>
+          </div>
+        </div>
+
+        <!-- 5. Admin Login View -->
+        <div
+          id="adminLoginView"
+          class="hidden flex-col gap-5 animate-fade-in my-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm"
+        >
+          <button
+            id="backToRoleFromAdminBtn"
+            class="text-secondary flex items-center gap-1 text-sm hover:text-gray-800 self-start transition"
+          >
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Zurück
+          </button>
+          <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <i data-lucide="shield" class="text-gray-500 w-6 h-6"></i> Admin
+            Login
+          </h2>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">Admin PIN <span class="font-normal text-secondary">(6 Ziffern)</span></label>
+            <input
+              type="password"
+              inputmode="numeric"
+              id="adminLoginPin"
+              class="p-3 border border-gray-200 rounded-xl text-lg bg-white tracking-widest focus:outline-gray-400 transition text-center"
+              maxlength="6"
+              placeholder="••••••"
+            />
+          </div>
+
+          <button
+            id="adminLoginSubmitBtn"
+            class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg shadow-gray-900/20 active:scale-95 transition mt-2"
+          >
+            Einloggen
+          </button>
+          <div
+            id="adminLoginError"
+            class="text-red-500 text-sm hidden font-medium text-center bg-red-50 p-2 rounded"
+          ></div>
+        </div>
+
+        <!-- 6. Admin Dashboard View -->
+        <div
+          id="adminDashboardView"
+          class="hidden flex-col gap-4 animate-fade-in my-2 px-2 lg:px-6"
+        >
+          <!-- Tabs Navigation -->
+          <div
+            class="px-2 pt-2 border-b border-gray-200 text-sm flex overflow-x-auto hide-scrollbar"
+          >
+            <button
+              onclick="window.switchAdminTab('abrechnung')"
+              id="tabBtn-abrechnung"
+              class="admin-tab-btn px-4 py-3 font-bold text-primary border-b-2 border-primary whitespace-nowrap outline-none transition-colors"
+            >
+              Abrechnung Monat
+            </button>
+            <button
+              onclick="window.switchAdminTab('lohn')"
+              id="tabBtn-lohn"
+              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors"
+            >
+              Lohnbuchhaltung
+            </button>
+            <button
+              onclick="window.switchAdminTab('jahr')"
+              id="tabBtn-jahr"
+              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors"
+            >
+              Jahresübersicht
+            </button>
+            <button
+              onclick="window.switchAdminTab('verwaltung')"
+              id="tabBtn-verwaltung"
+              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors"
+            >
+              Ü-Leiter verwalten
+            </button>
+          </div>
+
+          <!-- Tab 1: Abrechnung -->
+          <div id="adminTab-abrechnung" class="flex flex-col gap-4">
+            <div class="flex justify-between items-center px-1 mt-2">
+              <h3 class="font-bold text-lg text-gray-800">Abrechnung</h3>
+              <button
+                id="adminAddEntryBtn"
+                class="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
+              >
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Eintrag hinzufügen
+              </button>
+            </div>
+
+            <div
+              class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"
+            >
+              <button
+                id="adminPrevMonthBtn"
+                class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition"
+              >
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+              </button>
+              <h3
+                class="font-bold text-lg text-gray-800"
+                id="adminSelectedMonthLabel"
+              >
+                Juni 2026
+              </h3>
+              <button
+                id="adminNextMonthBtn"
+                class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition"
+              >
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <div
+              class="bg-white rounded-2xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col mb-4"
+            >
+              <div
+                class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50"
+              >
+                <h3 class="font-bold text-sm text-gray-800">
+                  Übersicht & Freigaben
+                </h3>
+              </div>
+              <div
+                id="adminUsersList"
+                class="flex flex-col bg-white divide-y divide-gray-100"
+              >
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Lohnbuchhaltung -->
+          <div id="adminTab-lohn" class="hidden flex-col gap-4">
+            <div class="flex justify-between items-center px-1 mt-2">
+              <h3 class="font-bold text-lg text-gray-800">Lohnbuchhaltung</h3>
+              <div class="flex gap-2">
+                <button
+                  id="exportCsvBtnLohn"
+                  class="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Lohn
+                </button>
+                <button
+                  id="exportCsvBtnAlle"
+                  class="flex items-center gap-1 px-3 py-1.5 bg-gray-500 text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
+                >
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Alle (CSV)
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+              <button id="adminLohnPrevBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+              </button>
+              <h3 class="font-bold text-lg text-gray-800" id="adminLohnMonthLabel">Juni 2026</h3>
+              <button id="adminLohnNextBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col mb-4">
+              <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+                <p class="text-xs text-secondary"><strong>Export Lohn:</strong> Nur Trainer mit Ziel erreicht oder Kulanz gewährt. Spalten: Vorname; Name; Klinik; Gesamtstunden; Auszahlung</p>
+                <p class="text-xs text-secondary mt-1"><strong>Alle (CSV):</strong> Alle Trainer. Spalten: Einrichtung; Vorname; Name; Status; Gesamtstunden</p>
+              </div>
+              <div id="lohnUsersList" class="flex flex-col bg-white divide-y divide-gray-100"></div>
+            </div>
+          </div>
+
+          <!-- Tab 3: Jahresübersicht -->
+          <div id="adminTab-jahr" class="hidden flex-col gap-4">
+            <div class="flex justify-between items-center px-1 mt-2">
+              <h3 class="font-bold text-lg text-gray-800">Jahresübersicht</h3>
+              <button
+                id="exportCsvBtnJahr"
+                class="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
+              >
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Jahr Export
+              </button>
+            </div>
+
+            <div
+              class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between"
+            >
+              <button
+                id="adminPrevYearBtn"
+                class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition"
+              >
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+              </button>
+              <h3
+                class="font-bold text-lg text-gray-800"
+                id="adminSelectedYearLabel"
+              >
+                März 2026 - Februar 2027
+              </h3>
+              <button
+                id="adminNextYearBtn"
+                class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition"
+              >
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <div
+              class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto pb-2 mb-4 hide-scrollbar"
+            >
+              <table
+                class="w-full text-left text-xs whitespace-nowrap"
+              >
+                <thead>
+                  <tr
+                    class="bg-gray-50 text-gray-500 uppercase font-bold border-b border-gray-100"
+                    id="jahrTableHead"
+                  >
+                    <th
+                      class="p-3 sticky left-0 bg-gray-50 z-10 border-r border-gray-100 w-32"
+                    >
+                      Name
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="jahrTableBody"
+                  class="divide-y divide-gray-100"
+                ></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 4: Ü-Leiter Verwaltung -->
+          <div id="adminTab-verwaltung" class="hidden flex-col gap-4 mb-4">
+            <div class="flex justify-between items-center px-1 mt-2">
+              <h3 class="font-bold text-lg text-gray-800">Übungsleiter</h3>
+              <button
+                onclick="window.adminEditUser('')"
+                class="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition"
+              >
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Neu anlegen
+              </button>
+            </div>
+
+            <div
+              class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col divide-y divide-gray-100"
+              id="adminVerwaltungList"
+            >
+            </div>
+          </div>
+        </div>
+
+        <!-- Entry Edit Modal -->
+        <div
+          id="entryEditModal"
+          class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4"
+        >
+          <div
+            class="bg-white rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10"
+          >
+            <div
+              class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50"
+            >
+              <h3 class="font-bold text-lg text-gray-800">
+                Eintrag bearbeiten
+              </h3>
+              <button
+                onclick="window.closeEntryModal()"
+                class="text-gray-400 hover:text-gray-800 transition"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-5 flex flex-col gap-4 overflow-y-auto">
+              <input type="hidden" id="entryModalId" />
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Datum</label>
+                <input
+                  type="date"
+                  id="entryModalDatum"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
+                />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Von</label>
+                  <input
+                    type="time"
+                    id="entryModalVon"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
+                  />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Bis</label>
+                  <input
+                    type="time"
+                    id="entryModalBis"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2"
+            >
+              <button
+                onclick="window.closeEntryModal()"
+                class="px-4 py-2 font-semibold text-sm text-gray-600 active:scale-95 transition"
+              >
+                Abbrechen
+              </button>
+              <button
+                onclick="window.saveEntryModal()"
+                class="px-4 py-2 bg-primary font-bold text-sm text-white rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition"
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Add Entry Modal -->
+        <div id="adminAddEntryModal" class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4">
+          <div class="bg-white rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 class="font-bold text-lg text-gray-800">Eintrag hinzufügen</h3>
+              <button onclick="window.closeAdminAddModal()" class="text-gray-400 hover:text-gray-800 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-5 flex flex-col gap-4">
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Übungsleiter</label>
+                <select id="adminAddEntryUser" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition bg-white"></select>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Datum</label>
+                <input type="date" id="adminAddEntryDatum" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Von</label>
+                  <input type="time" id="adminAddEntryVon" value="09:00" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Bis</label>
+                  <input type="time" id="adminAddEntryBis" value="11:00" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                </div>
+              </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+              <button onclick="window.closeAdminAddModal()" class="px-4 py-2 font-semibold text-sm text-gray-600 active:scale-95 transition">Abbrechen</button>
+              <button onclick="window.saveAdminAddEntry()" class="px-4 py-2 bg-primary font-bold text-sm text-white rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition">Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Edit Modal -->
+        <div
+          id="userEditModal"
+          class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4"
+        >
+          <div
+            class="bg-white rounded-2xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10"
+          >
+            <div
+              class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50"
+            >
+              <h3 class="font-bold text-lg text-gray-800" id="ueModalTitle">
+                Übungsleiter bearbeiten
+              </h3>
+              <button
+                onclick="window.closeUserModal()"
+                class="text-gray-400 hover:text-gray-800 transition"
+              >
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto flex flex-col gap-3">
+              <input type="hidden" id="ueModalId" />
+              <div>
+                <label
+                  class="text-xs font-semibold text-gray-700 flex justify-between"
+                  >Vor- und Nachname
+                  <span id="ueModalErrorName" class="text-red-500 hidden"
+                    >Pflichtfeld!</span
+                  ></label
+                >
+                <input
+                  type="text"
+                  id="ueModalName"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
+                />
+              </div>
+              <div>
+                <label
+                  class="text-xs font-semibold text-gray-700 whitespace-nowrap"
+                  >Einrichtung / Zuordnung</label
+                >
+                <input
+                  type="text"
+                  id="ueModalEinrichtung"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
+                />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-700"
+                    >Telefon</label
+                  >
+                  <input
+                    type="tel"
+                    id="ueModalTelefon"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
+                    placeholder="+49..."
+                  />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-700"
+                    >4-stelliger Login PIN</label
+                  >
+                  <input
+                    type="password"
+                    inputmode="numeric"
+                    maxlength="4"
+                    id="ueModalPin"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm tracking-widest focus:outline-primary transition text-center"
+                  />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-700"
+                    >E-Mail</label
+                  >
+                  <input
+                    type="email"
+                    id="ueModalEmail"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition"
+                    placeholder="name@beispiel.de"
+                  />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-700"
+                    >Status</label
+                  >
+                  <select
+                    id="ueModalStatus"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition bg-white"
+                  >
+                    <option value="aktiv">Aktiv</option>
+                    <option value="pausiert">Pausiert</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-700"
+                  >Adressdaten</label
+                >
+                <textarea
+                  id="ueModalAdresse"
+                  rows="3"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary resize-none transition"
+                  placeholder="Straße, PLZ Ort"
+                ></textarea>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-700"
+                  >Gesonderte Notizen</label
+                >
+                <textarea
+                  id="ueModalNotizen"
+                  rows="3"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary resize-none transition"
+                  placeholder="Ausfälle, Urlaub, Besonderheiten..."
+                ></textarea>
+              </div>
+            </div>
+            <div
+              class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center"
+            >
+              <button
+                onclick="window.deleteUserModal()"
+                id="ueModalDeleteBtn"
+                class="text-red-500 hover:text-red-700 p-2 text-sm font-bold transition"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+              <div class="flex gap-2">
+                <button
+                  onclick="window.closeUserModal()"
+                  class="px-4 py-2 font-medium text-sm text-gray-600 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onclick="window.saveUserModal()"
+                  class="px-4 py-2 font-bold text-sm text-white bg-primary rounded-lg shadow-sm hover:bg-primary/90 transition"
+                >
+                  Speichern
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Notification Overlay -->
+        <div
+          id="notificationOverlay"
+          class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium transition-opacity duration-300 opacity-0 pointer-events-none flex items-center gap-2"
+        >
+          <i data-lucide="info" class="w-4 h-4"></i>
+          <span id="notificationMsg">Info</span>
+        </div>
+      </main>
+    </div>
+
+    <script type="module">
+      const firebaseConfig = {
+        apiKey: "AIzaSyA6_xNOj1hO7NwZIZBMrsGkxBWQccD-TU0",
+        authDomain: "msbw-stundenverwaltung.firebaseapp.com",
+        databaseURL: "https://msbw-stundenverwaltung-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "msbw-stundenverwaltung",
+        storageBucket: "msbw-stundenverwaltung.firebasestorage.app",
+        messagingSenderId: "410211949596",
+        appId: "1:410211949596:web:398efcd6f7795d208d13d9",
+      };
+
+      const USE_MOCK = window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+
+      let dbMockState = { einstellungen: null, uebungsleiter: {}, eintraege: {}, freigaben: {}, abschluesse: {} };
+      if (USE_MOCK) {
+        try { const s = localStorage.getItem("msbw_db"); if (s) dbMockState = JSON.parse(s); } catch (e) {}
+      }
+      const saveMock = () => { if (USE_MOCK) localStorage.setItem("msbw_db", JSON.stringify(dbMockState)); };
+      const generateId = () => Math.random().toString(36).substring(2, 10);
+
+      const API = {
+        getEinstellungen: async () => { if (USE_MOCK) return dbMockState.einstellungen; return null; },
+        setEinstellungen: async (data) => { if (USE_MOCK) { dbMockState.einstellungen = data; saveMock(); return true; } },
+        getUebungsleiterList: async () => { if (USE_MOCK) return Object.entries(dbMockState.uebungsleiter).map(([id, data]) => ({ id, ...data })); return []; },
+        addUebungsleiter: async (data) => { const id = generateId(); if (USE_MOCK) { dbMockState.uebungsleiter[id] = data; saveMock(); return id; } },
+        updateUebungsleiter: async (id, data) => { if (USE_MOCK) { dbMockState.uebungsleiter[id] = { ...dbMockState.uebungsleiter[id], ...data }; saveMock(); return true; } },
+        deleteUebungsleiter: async (id) => { if (USE_MOCK) { delete dbMockState.uebungsleiter[id]; saveMock(); } },
+        getFreigaben: async () => { if (USE_MOCK) return dbMockState.freigaben || {}; return {}; },
+        setFreigabe: async (monat, userId, v) => { if (USE_MOCK) { if (!dbMockState.freigaben) dbMockState.freigaben = {}; if (!dbMockState.freigaben[monat]) dbMockState.freigaben[monat] = {}; dbMockState.freigaben[monat][userId] = v; saveMock(); return true; } },
+        getAbschluesse: async () => { if (USE_MOCK) return dbMockState.abschluesse || {}; return {}; },
+        setAbschluss: async (monat, userId, v) => { if (USE_MOCK) { if (!dbMockState.abschluesse) dbMockState.abschluesse = {}; if (!dbMockState.abschluesse[monat]) dbMockState.abschluesse[monat] = {}; dbMockState.abschluesse[monat][userId] = v; saveMock(); return true; } },
+        getEintraege: async () => { if (USE_MOCK) return Object.entries(dbMockState.eintraege).map(([id, data]) => ({ id, ...data })); return []; },
+        addEintrag: async (data) => { const id = generateId(); if (USE_MOCK) { dbMockState.eintraege[id] = data; saveMock(); return id; } },
+        updateEintrag: async (id, data) => { if (USE_MOCK) { dbMockState.eintraege[id] = { ...dbMockState.eintraege[id], ...data }; saveMock(); return true; } },
+        deleteEintrag: async (id) => { if (USE_MOCK) { delete dbMockState.eintraege[id]; saveMock(); return true; } },
+      };
+
+      const STATE = {
+        view: "loadingView",
+        einstellungen: null,
+        ulList: [],
+        entries: [],
+        freigaben: {},
+        abschluesse: {},
+        currentUser: null,
+        isAdmin: false,
+        adminMonthStr: new Date().toISOString().substring(0, 7),
+        adminTab: "abrechnung",
+        adminYearStart: new Date().getFullYear(),
+        ulActiveMonthStr: null,
+      };
+
+      const el = (id) => document.getElementById(id);
+
+      const showNotification = (msg, duration = 3000) => {
+        const overlay = el("notificationOverlay");
+        el("notificationMsg").textContent = msg;
+        overlay.classList.remove("opacity-0", "pointer-events-none");
+        setTimeout(() => overlay.classList.add("opacity-0", "pointer-events-none"), duration);
+      };
+
+      const calculateHours = (von, bis) => {
+        if (!von || !bis) return 0;
+        const [vH, vM] = von.split(":").map(Number);
+        const [bH, bM] = bis.split(":").map(Number);
+        return Math.max(0, parseFloat((bH - vH + (bM - vM) / 60).toFixed(2)));
+      };
+
+      const formatHours = (h) => h.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+      const formatMonthStr = (yyyyMm) => {
+        const [y, m] = yyyyMm.split("-");
+        const date = new Date(y, parseInt(m) - 1, 1);
+        return date.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+      };
+
+      const MONTHS_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+      const getFiscalMonths = (startMonth, startYear) => {
+        const months = [];
+        for (let i = 0; i < 12; i++) {
+          let m = ((startMonth - 1 + i) % 12) + 1;
+          let y = startYear + Math.floor((startMonth - 1 + i) / 12);
+          months.push(`${y}-${String(m).padStart(2, '0')}`);
+        }
+        return months;
+      };
+
+      const setAppWidth = (isAdmin) => {
+        const app = el("app");
+        if (isAdmin) { app.classList.remove("max-w-xl"); app.classList.add("max-w-full"); }
+        else { app.classList.remove("max-w-full"); app.classList.add("max-w-xl"); }
+      };
+
+      const switchView = (viewId) => {
+        const views = ["loadingView","setupView","roleSelectView","ulLoginView","ulDashboardView","adminLoginView","adminDashboardView"];
+        views.forEach((v) => {
+          const element = el(v);
+          if (!element) return;
+          if (v === viewId) { element.classList.remove("hidden"); element.classList.add("flex"); }
+          else { element.classList.add("hidden"); element.classList.remove("flex"); }
+        });
+        STATE.view = viewId;
+        if (STATE.currentUser || STATE.isAdmin) el("logoutBtn").classList.remove("hidden");
+        else el("logoutBtn").classList.add("hidden");
+        setAppWidth(STATE.isAdmin && viewId === "adminDashboardView");
+        // Dark body bg for login/setup screens, light for dashboards
+        const lightViews = ["ulDashboardView", "adminDashboardView"];
+        if (lightViews.includes(viewId)) document.body.classList.add("light-bg");
+        else document.body.classList.remove("light-bg");
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      const logout = () => { STATE.currentUser = null; STATE.isAdmin = false; switchView("roleSelectView"); };
+
+      const initApp = async () => {
+        STATE.einstellungen = await API.getEinstellungen();
+        if (!STATE.einstellungen) { switchView("setupView"); }
+        else { loadDataAndStart(); }
+      };
+
+      const loadDataAndStart = async () => {
+        STATE.ulList = await API.getUebungsleiterList();
+        STATE.entries = await API.getEintraege();
+        STATE.freigaben = await API.getFreigaben();
+        STATE.abschluesse = await API.getAbschluesse();
+        STATE.adminYearStart = STATE.einstellungen.start_jahr || new Date().getFullYear();
+        if (STATE.currentUser) renderUlDashboard();
+        else if (STATE.isAdmin) renderAdminDashboard();
+        else switchView("roleSelectView");
+      };
+
+      // ---- Setup ----
+      el("setupSubmitBtn").addEventListener("click", async () => {
+        const pin = el("setupAdminPin").value;
+        const pin2 = el("setupAdminPin2").value;
+        const stunden = parseFloat(el("setupPflichtStunden").value);
+        const startMonat = parseInt(el("setupStartMonat").value);
+        const startJahr = parseInt(el("setupStartJahr").value);
+        const seed = el("setupSeedData").checked;
+        const err = el("setupError");
+        err.classList.add("hidden");
+
+        if (!/^\d{6}$/.test(pin)) { err.textContent = "Admin-PIN muss exakt 6 Ziffern haben."; err.classList.remove("hidden"); return; }
+        if (pin !== pin2) { err.textContent = "Die PINs stimmen nicht überein."; err.classList.remove("hidden"); return; }
+        if (!stunden || stunden <= 0) { err.textContent = "Bitte eine gültige Stundenzahl eingeben."; err.classList.remove("hidden"); return; }
+
+        await API.setEinstellungen({ admin_pin: pin, pflicht_stunden: stunden, start_monat: startMonat, start_jahr: startJahr });
+
+        if (seed) {
+          const echteUL = [
+            {name:"Abdoul Zampaligre", einrichtung:"BG Klinik Tübingen", pin:"4757"},
+            {name:"Abdullah Göcmen", einrichtung:"Kliniken Landkreis Heidenheim gGmbH", pin:"9240"},
+            {name:"Aicha Seddiki/Cheklal", einrichtung:"Universitätsklinikum Freiburg", pin:"5081"},
+            {name:"Aicha Outaggarts", einrichtung:"Kreisklinik Reutlingen", pin:"1096"},
+            {name:"Ajla Dendic", einrichtung:"Klinikum Stuttgart - Bad Cannstatt", pin:"6583"},
+            {name:"Aysel Özdemir-Alkevli", einrichtung:"Klinikum Stuttgart - Katharinen + Olgahospital", pin:"3142"},
+            {name:"Burcu Yildirim", einrichtung:"Klinikum Esslingen", pin:"7821"},
+            {name:"Büsra Aktas", einrichtung:"Klinikverbund Südwest Krankenhaus Leonberg", pin:"2934"},
+            {name:"Dogan Cimen", einrichtung:"Medizin Campus Bodensee - Friedrichshafen", pin:"8467"},
+            {name:"Esra Kilic", einrichtung:"ZFP Wiesloch", pin:"5319"},
+            {name:"Fatima Stiyel", einrichtung:"Universitätsklinikum Freiburg", pin:"6748"},
+            {name:"Filiz Eroglu", einrichtung:"Universitätsklinikum Freiburg", pin:"3825"},
+            {name:"Gamze Sahin", einrichtung:"Uniklinikum Ulm", pin:"9173"},
+            {name:"Gülsever Yilmazer", einrichtung:"Rottweil Helios Klinik", pin:"4562"},
+            {name:"Halime Kahraman", einrichtung:"Regionale Kliniken Holding RKH GmbH", pin:"7036"},
+            {name:"Halis Kamiloglu", einrichtung:"Schwarzwald-Baar-Klinikum", pin:"2481"},
+            {name:"Hanife Yazici", einrichtung:"Schwarzwald-Baar-Klinikum", pin:"8953"},
+            {name:"Hatice Özbal", einrichtung:"Uniklinikum Mannheim", pin:"1647"},
+            {name:"Hatice Özdemir", einrichtung:"Regionale Kliniken Holding RKH GmbH", pin:"5284"},
+            {name:"Hazem El Gafari", einrichtung:"Universitätsklinikum Tübingen", pin:"3719"},
+            {name:"Ismet Harbi", einrichtung:"RKH Kliniken Ludwigsburg-Bietigheim", pin:"6392"},
+            {name:"Jaaffar Dahasse", einrichtung:"Klinikum Stuttgart - Katharinen + Olgahospital", pin:"8175"},
+            {name:"Jwanita Khatib-Saleh", einrichtung:"Robert-Bosch-Krankenhaus", pin:"4836"},
+            {name:"Kaan Özbal", einrichtung:"Zentralinstitut für Seelische Gesundheit", pin:"2563"},
+            {name:"Mahdy Shaltout", einrichtung:"Universitätsklinikum Tübingen", pin:"7418"},
+            {name:"Momena Almazloum", einrichtung:"Universitätsklinikum Freiburg", pin:"9254"},
+            {name:"Muammer Ermis", einrichtung:"Klinikum Aalen", pin:"3687"},
+            {name:"Musa Güven", einrichtung:"Kreiskliniken Winnenden", pin:"6142"},
+            {name:"Mustafa Sary", einrichtung:"Kreisklinik Reutlingen", pin:"8793"},
+            {name:"Nawal Bertoune", einrichtung:"ZI Mannheim", pin:"1958"},
+            {name:"Nazan Zorbulut", einrichtung:"Ortenau Klinikum Lahr-Ettenheim", pin:"5427"},
+            {name:"Nebahat Delalic", einrichtung:"Diakonissenkrankenhaus Mannheim", pin:"7361"},
+            {name:"Nermina Zolj-Sabanovic", einrichtung:"Furtbachklinik", pin:"2849"},
+            {name:"Nizama Brigiz", einrichtung:"Uniklinikum Mannheim", pin:"9516"},
+            {name:"Nurgül Süral", einrichtung:"Kliniken Landkreis Sigmaringen GmbH", pin:"4273"},
+            {name:"Özcan Kalkat", einrichtung:"Kliniken Landkreis Heidenheim gGmbH", pin:"6834"},
+            {name:"Rauia Jahdari", einrichtung:"Universitätsklinikum Freiburg", pin:"5056"},
+            {name:"Reem Ghanem", einrichtung:"Klinikum Mittelbaden - Baden Baden", pin:"1110"},
+            {name:"Sevim Düzelten", einrichtung:"Universitätsklinikum Tübingen", pin:"6439"},
+            {name:"Sükran Cihan", einrichtung:"Klinikverbund Südwest Böblingen", pin:"5902"},
+            {name:"Tahsin Kazan", einrichtung:"Robert-Bosch-Krankenhaus", pin:"6081"},
+            {name:"Tuncay Gündüz", einrichtung:"SLK Plattenwald", pin:"1576"},
+            {name:"Turan Kilic", einrichtung:"GRN Schwetzingen", pin:"5367"},
+            {name:"Wafia Mohamed", einrichtung:"Universitätsklinikum Tübingen", pin:"8770"},
+            {name:"Zeynel Zorbulut", einrichtung:"Ortenau Klinikum Lahr-Ettenheim", pin:"6800"},
+            {name:"Tino Vukalic", einrichtung:"Rems-Murr-Klinikum Winnenden", pin:"1561"},
+            {name:"Mihrap Demir", einrichtung:"RKH Kliniken Ludwigsburg-Bietigheim", pin:"3947"},
+            {name:"Nese Yilmaz", einrichtung:"Stauferklinikum Schwäbisch-Gmünd", pin:"7283"},
+            {name:"Fatma Özen", einrichtung:"Klinikum Stuttgart - Bad Cannstatt", pin:"4619"},
+          ];
+          for (const ul of echteUL) {
+            await API.addUebungsleiter({ name: ul.name, einrichtung: ul.einrichtung, pin: ul.pin, aktiv: true, pausiert: false, telefon: "", email: "", adresse: "", notizen: "" });
+          }
+        }
+
+        showNotification("Setup erfolgreich!");
+        initApp();
+      });
+
+      // ---- Role Selection ----
+      el("navUlLoginBtn").addEventListener("click", () => { el("ulLoginName").value = ""; el("ulLoginPin").value = ""; el("ulLoginError").classList.add("hidden"); switchView("ulLoginView"); });
+      el("navAdminLoginBtn").addEventListener("click", () => { el("adminLoginPin").value = ""; el("adminLoginError").classList.add("hidden"); switchView("adminLoginView"); });
+      el("backToRoleFromUlBtn").addEventListener("click", () => switchView("roleSelectView"));
+      el("backToRoleFromAdminBtn").addEventListener("click", () => switchView("roleSelectView"));
+      el("logoutBtn").addEventListener("click", logout);
+
+      // ---- Ü-Leiter Login ----
+      el("ulLoginSubmitBtn").addEventListener("click", () => {
+        const nameVal = el("ulLoginName").value.trim().toLowerCase();
+        const err = el("ulLoginError");
+        // TODO: Passwort/PIN-Validierung später aktivieren
+        const matchedUser = nameVal
+          ? STATE.ulList.find((u) => u.name.toLowerCase() === nameVal)
+          : STATE.ulList[0];
+        if (matchedUser) {
+          STATE.currentUser = matchedUser;
+          renderUlDashboard();
+        } else {
+          err.textContent = "Kein Übungsleiter gefunden.";
+          err.classList.remove("hidden");
+        }
+      });
+
+      // ---- Ü-Leiter Dashboard ----
+      el("ulSubmitMonthBtn").addEventListener("click", () => {
+        const monat = STATE.ulActiveMonthStr;
+        if (!monat) return;
+        el("confirmMonthModalText").textContent = `Den Monat ${formatMonthStr(monat)} wirklich abschließen? Danach können keine Zeiten mehr bearbeitet oder hinzugefügt werden.`;
+        el("confirmMonthModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      el("confirmMonthCancel").addEventListener("click", () => {
+        el("confirmMonthModal").classList.add("hidden");
+      });
+
+      el("confirmMonthOk").addEventListener("click", async () => {
+        el("confirmMonthModal").classList.add("hidden");
+        const monat = STATE.ulActiveMonthStr;
+        const btn = el("ulSubmitMonthBtn");
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Speichere...`;
+        await API.setAbschluss(monat, STATE.currentUser.id, true);
+        STATE.abschluesse = await API.getAbschluesse();
+        showNotification("Monat " + formatMonthStr(monat) + " wurde erfolgreich abgeschlossen!");
+        renderUlDashboard();
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i> Monat abschließen`;
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      const renderUlDashboard = () => {
+        switchView("ulDashboardView");
+        const user = STATE.currentUser;
+        el("ulDashName").textContent = user.name;
+        el("ulDashEinrichtung").textContent = user.einrichtung;
+
+        const todayStr = new Date().toISOString().substring(0, 7);
+        const sm = STATE.einstellungen.start_monat || 3;
+        const sy = STATE.einstellungen.start_jahr || new Date().getFullYear();
+
+        // Build list of fiscal months up to today (up to 2 years)
+        const allMonths = [];
+        for (let i = 0; i < 24; i++) {
+          let m = ((sm - 1 + i) % 12) + 1;
+          let y = sy + Math.floor((sm - 1 + i) / 12);
+          const ym = `${y}-${String(m).padStart(2, '0')}`;
+          if (ym > todayStr) break;
+          allMonths.push(ym);
+        }
+
+        let activeMonth = todayStr;
+        for (const m of allMonths) {
+          if (!(STATE.abschluesse[m] && STATE.abschluesse[m][user.id])) { activeMonth = m; break; }
+        }
+        STATE.ulActiveMonthStr = activeMonth;
+
+        const isClosed = STATE.abschluesse[activeMonth] && STATE.abschluesse[activeMonth][user.id];
+
+        const [ay, am] = activeMonth.split('-').map(Number);
+        const lastDay = new Date(ay, am, 0).getDate();
+        el("newEntryDatum").min = `${activeMonth}-01`;
+        el("newEntryDatum").max = `${activeMonth}-${String(lastDay).padStart(2,'0')}`;
+        el("newEntryDatum").value = new Date().toISOString().substring(0,7) === activeMonth
+          ? new Date().toISOString().substring(0, 10)
+          : `${activeMonth}-01`;
+
+        el("ulDashListMonthLabel").textContent = formatMonthStr(activeMonth);
+        el("ulDashMonthStatus").textContent = formatMonthStr(activeMonth);
+
+        el("ulAddEntryBlock").classList.toggle("hidden", !!isClosed);
+        el("ulMonthClosedNotice").classList.toggle("hidden", !isClosed);
+        el("ulSubmitMonthBtn").classList.toggle("hidden", !!isClosed);
+        document.querySelector(".text-xs.text-secondary.mt-2.text-center")?.classList.toggle("hidden", !!isClosed);
+
+        updateUlProgressAndList(activeMonth);
+      };
+
+      const updateUlProgressAndList = (monthStr) => {
+        const userEntries = STATE.entries
+          .filter((e) => e.uebungsleiter_id === STATE.currentUser.id && e.monat === monthStr)
+          .sort((a, b) => new Date(b.datum) - new Date(a.datum));
+
+        const totalHours = userEntries.reduce((sum, e) => sum + e.stunden, 0);
+        const goal = STATE.einstellungen.pflicht_stunden;
+
+        el("ulDashHoursCount").innerHTML = `${formatHours(totalHours)} <span class="text-2xl text-gray-400 font-normal ml-1">/ ${goal}h</span>`;
+        const pct = Math.min(100, Math.round((totalHours / goal) * 100));
+        const bar = el("ulDashProgressBar");
+        bar.style.width = `${pct}%`;
+
+        if (pct >= 100) {
+          bar.classList.replace("bg-primary", "bg-green-500");
+          el("ulDashGoalMsg").innerHTML = `<span class="text-green-600 font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> Ziel erreicht!</span>`;
+        } else {
+          if (bar.classList.contains("bg-green-500")) bar.classList.replace("bg-green-500", "bg-primary");
+          el("ulDashGoalMsg").innerHTML = `Noch <span class="font-bold text-gray-600">${formatHours(goal - totalHours)}</span> Stunden bis zum Pflichtziel`;
+        }
+
+        const isClosed = STATE.abschluesse[monthStr] && STATE.abschluesse[monthStr][STATE.currentUser.id];
+        const listDiv = el("ulEntriesList");
+        if (userEntries.length === 0) {
+          listDiv.innerHTML = '<div class="text-center text-sm text-secondary p-4 bg-bglight rounded-xl border border-gray-100">Keine Einträge in diesem Monat.</div>';
+        } else {
+          listDiv.innerHTML = userEntries.map((e) => `
+            <div class="flex justify-between items-center p-3 bg-bglight rounded-lg border-l-4 border-primary">
+              <div>
+                <p class="font-bold text-gray-800 text-lg">${new Date(e.datum + 'T12:00:00').toLocaleDateString("de-DE")}</p>
+                <p class="text-base text-gray-600 mt-1 font-semibold">${e.von} - ${e.bis} Uhr</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-mono font-bold text-primary text-3xl">${formatHours(e.stunden)}h</span>
+                ${!isClosed ? `<button onclick="window.ulDeleteEntry('${e.id}')" class="text-gray-300 hover:text-red-500 transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+              </div>
+            </div>`).join("");
+        }
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      window.ulDeleteEntry = async (id) => {
+        if (!confirm("Eintrag löschen?")) return;
+        await API.deleteEintrag(id);
+        STATE.entries = await API.getEintraege();
+        updateUlProgressAndList(STATE.ulActiveMonthStr);
+        showNotification("Eintrag gelöscht");
+      };
+
+      const previewHours = () => {
+        const hours = calculateHours(el("newEntryVon").value, el("newEntryBis").value);
+        el("newEntryPreview").textContent = formatHours(hours) + "h";
+        el("addEntryBtn").disabled = hours <= 0;
+      };
+      el("newEntryVon").addEventListener("input", previewHours);
+      el("newEntryBis").addEventListener("input", previewHours);
+
+      el("addEntryBtn").addEventListener("click", async () => {
+        const datum = el("newEntryDatum").value;
+        const von = el("newEntryVon").value;
+        const bis = el("newEntryBis").value;
+        const stunden = calculateHours(von, bis);
+        if (!datum || !von || !bis || stunden <= 0) return;
+        const btn = el("addEntryBtn");
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;border-top-width:2px;border-top-color:white;"></div> Speichern...';
+        await API.addEintrag({ uebungsleiter_id: STATE.currentUser.id, datum, monat: datum.substring(0, 7), von, bis, stunden });
+        showNotification("Eintrag gespeichert!");
+        el("newEntryVon").value = ""; el("newEntryBis").value = "";
+        previewHours();
+        btn.innerHTML = "Eintrag speichern";
+        STATE.entries = await API.getEintraege();
+        updateUlProgressAndList(datum.substring(0, 7));
+      });
+
+      // ---- Admin Login ----
+      el("adminLoginSubmitBtn").addEventListener("click", () => {
+        // TODO: PIN-Validierung später aktivieren
+        STATE.isAdmin = true;
+        renderAdminDashboard();
+      });
+
+      // ---- Admin Dashboard ----
+      window.switchAdminTab = (tab) => {
+        STATE.adminTab = tab;
+        document.querySelectorAll(".admin-tab-btn").forEach((b) => {
+          b.classList.remove("text-primary", "border-primary", "font-bold");
+          b.classList.add("text-gray-500", "border-transparent", "font-medium");
+        });
+        const activeBtn = el(`tabBtn-${tab}`);
+        activeBtn.classList.remove("text-gray-500", "border-transparent", "font-medium");
+        activeBtn.classList.add("text-primary", "border-primary", "font-bold");
+
+        ["abrechnung","lohn","jahr","verwaltung"].forEach(t => {
+          el(`adminTab-${t}`).classList.add("hidden");
+          el(`adminTab-${t}`).classList.remove("flex");
+        });
+        el(`adminTab-${tab}`).classList.remove("hidden");
+        el(`adminTab-${tab}`).classList.add("flex");
+        renderAdminDashboard();
+      };
+
+      const renderAdminDashboard = () => {
+        switchView("adminDashboardView");
+        if (STATE.adminTab === "abrechnung") renderAdminAbrechnung();
+        else if (STATE.adminTab === "lohn") renderAdminLohn();
+        else if (STATE.adminTab === "jahr") renderAdminJahr();
+        else if (STATE.adminTab === "verwaltung") renderAdminVerwaltung();
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      const renderAdminAbrechnung = () => {
+        el("adminSelectedMonthLabel").textContent = formatMonthStr(STATE.adminMonthStr);
+        const monthEntries = STATE.entries.filter((e) => e.monat === STATE.adminMonthStr);
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const listDiv = el("adminUsersList");
+
+        if (STATE.ulList.length === 0) {
+          listDiv.innerHTML = '<p class="text-center text-sm text-secondary bg-white p-4">Keine Übungsleiter angelegt.</p>';
+          return;
+        }
+
+        const html = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map((ul) => {
+          const hrs = monthEntries.filter((e) => e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
+          let isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+          let isAbgeschlossen = STATE.abschluesse[STATE.adminMonthStr] && STATE.abschluesse[STATE.adminMonthStr][ul.id];
+
+          let statusUI = "", bgLine = "";
+          if (hrs >= goal) {
+            statusUI = `<div class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="check" class="w-3 h-3"></i> Ziel erreicht</div>`;
+            bgLine = "border-l-4 border-emerald-400";
+          } else if (isFreigegeben) {
+            statusUI = `<div class="text-primary bg-primary/10 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="hand-heart" class="w-3 h-3"></i> Zugeständnis (Fehlt: ${formatHours(goal - hrs)}h)</div>`;
+            bgLine = "border-l-4 border-primary";
+          } else {
+            statusUI = `<div class="text-red-500 bg-red-50 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="triangle-alert" class="w-3 h-3"></i> Nicht erreicht (Fehlt: ${formatHours(goal - hrs)}h)</div>`;
+            bgLine = "border-l-4 border-red-400 opacity-70";
+          }
+
+          const uEntries = monthEntries.filter((e) => e.uebungsleiter_id === ul.id).sort((a, b) => a.datum.localeCompare(b.datum));
+          const entriesHtml = uEntries.length === 0
+            ? `<div class="text-center text-xs text-gray-400 py-3">Keine Einträge für diesen Monat</div>`
+            : uEntries.map((e) => `
+                <div class="flex justify-between items-center py-2">
+                  <span class="text-xs text-gray-600 font-medium">${new Date(e.datum + 'T12:00:00').toLocaleDateString("de-DE")} <span class="text-gray-400 font-normal">(${e.von}-${e.bis} Uhr)</span></span>
+                  <div class="flex items-center gap-3">
+                    <span class="font-mono text-primary font-bold text-sm">${formatHours(e.stunden)}h</span>
+                    <button onclick="window.adminEditEntry('${e.id}')" class="text-gray-300 hover:text-primary transition"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="window.adminDeleteEntry('${e.id}')" class="text-gray-300 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                  </div>
+                </div>`).join("");
+
+          const kulanzToggle = hrs < goal ? `
+            <div class="flex items-center justify-between border-t border-gray-100 pt-3 mt-1">
+              <div>
+                <div class="text-[11px] uppercase font-bold text-gray-700 tracking-wider">Auszahlung genehmigen (Zugeständnis)</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">Fehlende Stunden müssen nachgeholt werden.</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" ${isFreigegeben ? "checked" : ""} onchange="window.adminToggleKulanz('${ul.id}', this.checked)" class="sr-only peer">
+                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+              </label>
+            </div>` : "";
+
+          return `
+            <div class="group flex flex-col transition-all border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+              <div class="p-3 cursor-pointer" onclick="document.getElementById('det-${ul.id}').classList.toggle('hidden')">
+                <div class="flex items-center ${bgLine} pl-3 text-sm justify-between">
+                  <div>
+                    <div class="font-bold text-gray-800 leading-tight">
+                      ${ul.name}
+                      ${ul.pausiert ? '<span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1 py-0.5 rounded uppercase ml-1">Pausiert</span>' : ""}
+                      ${isAbgeschlossen ? '<span class="text-[10px] font-bold text-gray-600 bg-gray-200 px-1 py-0.5 rounded uppercase ml-1 inline-flex items-center gap-0.5"><i data-lucide="lock" class="w-3 h-3"></i> Abgeschlossen</span>' : ""}
+                    </div>
+                    <div class="text-[10px] text-secondary uppercase tracking-wider mt-0.5">${ul.einrichtung}</div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="font-mono text-lg font-bold ${hrs > 0 ? "text-gray-900" : "text-gray-400"}">${formatHours(hrs)}</div>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition"></i>
+                  </div>
+                </div>
+              </div>
+              <div id="det-${ul.id}" class="hidden flex-col p-3 pt-0 ml-3 mr-3 mt-1">
+                <div class="mb-3">${statusUI}</div>
+                <div class="bg-white rounded-xl border border-gray-100 px-3 divide-y divide-gray-50 shadow-sm">${entriesHtml}</div>
+                ${kulanzToggle}
+              </div>
+            </div>`;
+        }).join("");
+        listDiv.innerHTML = html;
+      };
+
+      const renderAdminLohn = () => {
+        el("adminLohnMonthLabel").textContent = formatMonthStr(STATE.adminMonthStr);
+        const monthEntries = STATE.entries.filter((e) => e.monat === STATE.adminMonthStr);
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const listDiv = el("lohnUsersList");
+
+        if (STATE.ulList.length === 0) {
+          listDiv.innerHTML = '<p class="text-center text-sm text-secondary p-4">Keine Übungsleiter angelegt.</p>';
+          return;
+        }
+
+        const html = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map((ul) => {
+          const hrs = monthEntries.filter((e) => e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
+          const isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+          return `
+            <div class="flex items-center justify-between p-3 text-sm ${isFreigegeben ? '' : 'opacity-50'}">
+              <div>
+                <div class="font-bold text-gray-800">${ul.name}</div>
+                <div class="text-[10px] text-secondary uppercase tracking-wider">${ul.einrichtung}</div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-mono font-bold text-primary">${formatHours(hrs)}h</span>
+                ${isFreigegeben
+                  ? '<span class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-bold">Auszahlung: Ja</span>'
+                  : '<span class="text-gray-400 bg-gray-100 px-2 py-0.5 rounded text-xs font-bold">Kein Export</span>'}
+              </div>
+            </div>`;
+        }).join("");
+        listDiv.innerHTML = html;
+      };
+
+      el("adminLohnPrevBtn").addEventListener("click", () => {
+        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
+        if (--m === 0) { m = 12; y--; }
+        STATE.adminMonthStr = `${y}-${m.toString().padStart(2, "0")}`;
+        renderAdminDashboard();
+      });
+      el("adminLohnNextBtn").addEventListener("click", () => {
+        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
+        if (++m === 13) { m = 1; y++; }
+        STATE.adminMonthStr = `${y}-${m.toString().padStart(2, "0")}`;
+        renderAdminDashboard();
+      });
+
+      const renderAdminJahr = () => {
+        const sm = STATE.einstellungen.start_monat || 3;
+        const ys = STATE.adminYearStart;
+        const months = getFiscalMonths(sm, ys);
+        const endM = months[months.length - 1];
+        el("adminSelectedYearLabel").textContent = `${new Date(months[0] + '-01').toLocaleDateString("de-DE", {month:"long"})} ${ys} - ${new Date(endM + '-01').toLocaleDateString("de-DE", {month:"short"})} ${endM.split('-')[0]}`;
+
+        el("jahrTableHead").innerHTML =
+          `<th class="px-3 py-2 sticky left-0 bg-gray-50 z-10 border-r border-gray-100 min-w-[160px]">Name</th>` +
+          months.map((m) => {
+            const d = new Date(m + '-01');
+            return `<th class="px-2 py-2 font-semibold text-center">${d.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })}</th>`;
+          }).join("") +
+          `<th class="px-2 py-2 bg-green-50 text-green-700 text-center">Ist</th><th class="px-2 py-2 bg-gray-100 text-center">Soll</th><th class="px-2 py-2 bg-gray-100 text-center">Diff</th>`;
+
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const yearlyGoal = goal * 12;
+        const now = new Date().toISOString().substring(0, 7);
+
+        const html = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map((ul) => {
+          let row = `<td class="px-3 py-2 sticky left-0 bg-white z-10 border-r border-gray-100 font-semibold text-gray-800 text-xs">${ul.name}</td>`;
+          let yearlyTotal = 0;
+          months.forEach((m) => {
+            const hrs = STATE.entries.filter((e) => e.monat === m && e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
+            if (m <= now) yearlyTotal += hrs;
+            const isFreigegeben = hrs >= goal || (STATE.freigaben[m] && STATE.freigaben[m][ul.id]);
+            let classes = m > now ? "text-gray-200" : hrs === 0 ? "text-gray-300" : hrs >= goal ? "text-emerald-600 font-bold" : isFreigegeben ? "text-primary font-bold" : "text-gray-800";
+            row += `<td class="px-2 py-2 font-mono text-center ${classes}">${m <= now ? formatHours(hrs) : '–'}</td>`;
+          });
+          const diff = yearlyTotal - yearlyGoal;
+          row += `<td class="px-2 py-2 font-mono font-bold text-green-700 bg-green-50 text-center">${formatHours(yearlyTotal)}</td>`;
+          row += `<td class="px-2 py-2 font-mono text-gray-500 bg-gray-50 text-center">${formatHours(yearlyGoal)}</td>`;
+          row += `<td class="px-2 py-2 font-mono font-bold text-center ${diff >= 0 ? 'text-emerald-600' : 'text-red-500'}">${diff >= 0 ? '+' : '-'}${formatHours(Math.abs(diff)).replace('.', ',')}</td>`;
+          return `<tr>${row}</tr>`;
+        }).join("");
+        el("jahrTableBody").innerHTML = html;
+      };
+
+      const renderAdminVerwaltung = () => {
+        const list = el("adminVerwaltungList");
+        list.innerHTML = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map((ul) => `
+          <div class="p-4 hover:bg-gray-50 flex justify-between items-center transition cursor-pointer" onclick="window.adminEditUser('${ul.id}')">
+            <div>
+              <div class="font-bold text-gray-800">${ul.name}
+                <span class="text-xs font-normal text-gray-400 ml-2 font-mono bg-gray-100 px-1.5 py-0.5 rounded">PIN: ${ul.pin}</span>
+                ${ul.pausiert ? '<span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded uppercase ml-2">Pausiert</span>' : ""}
+              </div>
+              <div class="text-[10px] uppercase text-secondary font-bold tracking-wider mt-0.5">${ul.einrichtung}</div>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300"></i>
+          </div>`).join("");
+      };
+
+      // ---- Admin Handlers ----
+      window.adminToggleKulanz = async (ulId, checked) => {
+        await API.setFreigabe(STATE.adminMonthStr, ulId, checked);
+        STATE.freigaben = await API.getFreigaben();
+        renderAdminDashboard();
+        showNotification(checked ? "Auszahlung genehmigt" : "Auszahlung widerrufen");
+      };
+
+      window.adminDeleteEntry = async (entryId) => {
+        if (!confirm("Eintrag sicher löschen?")) return;
+        await API.deleteEintrag(entryId);
+        STATE.entries = await API.getEintraege();
+        renderAdminDashboard();
+        showNotification("Eintrag gelöscht");
+      };
+
+      window.adminEditEntry = (entryId) => {
+        const entry = STATE.entries.find((e) => e.id === entryId);
+        if (!entry) return;
+        el("entryModalId").value = entryId;
+        el("entryModalDatum").value = entry.datum;
+        el("entryModalVon").value = entry.von;
+        el("entryModalBis").value = entry.bis;
+        el("entryEditModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+      };
+      window.closeEntryModal = () => { el("entryEditModal").classList.add("hidden"); };
+      window.saveEntryModal = async () => {
+        const entryId = el("entryModalId").value;
+        const datum = el("entryModalDatum").value;
+        const von = el("entryModalVon").value;
+        const bis = el("entryModalBis").value;
+        const stunden = calculateHours(von, bis);
+        if (!datum || !von || !bis || stunden <= 0) return;
+        await API.updateEintrag(entryId, { datum, monat: datum.substring(0, 7), von, bis, stunden });
+        STATE.entries = await API.getEintraege();
+        window.closeEntryModal();
+        renderAdminDashboard();
+        showNotification("Eintrag aktualisiert");
+      };
+
+      // Admin Add Entry
+      el("adminAddEntryBtn").addEventListener("click", () => {
+        const sel = el("adminAddEntryUser");
+        sel.innerHTML = STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+        el("adminAddEntryDatum").value = new Date().toISOString().substring(0, 10);
+        el("adminAddEntryModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+      });
+      window.closeAdminAddModal = () => el("adminAddEntryModal").classList.add("hidden");
+      window.saveAdminAddEntry = async () => {
+        const uid = el("adminAddEntryUser").value;
+        const datum = el("adminAddEntryDatum").value;
+        const von = el("adminAddEntryVon").value;
+        const bis = el("adminAddEntryBis").value;
+        const stunden = calculateHours(von, bis);
+        if (!uid || !datum || !von || !bis || stunden <= 0) return;
+        await API.addEintrag({ uebungsleiter_id: uid, datum, monat: datum.substring(0, 7), von, bis, stunden });
+        STATE.entries = await API.getEintraege();
+        window.closeAdminAddModal();
+        renderAdminDashboard();
+        showNotification("Eintrag hinzugefügt");
+      };
+
+      el("adminPrevMonthBtn").addEventListener("click", () => {
+        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
+        if (--m === 0) { m = 12; y--; }
+        STATE.adminMonthStr = `${y}-${m.toString().padStart(2, "0")}`;
+        renderAdminDashboard();
+      });
+      el("adminNextMonthBtn").addEventListener("click", () => {
+        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
+        if (++m === 13) { m = 1; y++; }
+        STATE.adminMonthStr = `${y}-${m.toString().padStart(2, "0")}`;
+        renderAdminDashboard();
+      });
+      el("adminPrevYearBtn").addEventListener("click", () => { STATE.adminYearStart--; renderAdminDashboard(); });
+      el("adminNextYearBtn").addEventListener("click", () => { STATE.adminYearStart++; renderAdminDashboard(); });
+
+      // ---- CSV Exports ----
+      const exportCsv = (onlyAuszahlung) => {
+        const goal = STATE.einstellungen.pflicht_stunden;
+        let csv = onlyAuszahlung ? "Vorname;Name;Klinik;Gesamtstunden;Auszahlung\n" : "Einrichtung;Vorname;Name;Status;Gesamtstunden\n";
+        const monthEntries = STATE.entries.filter((e) => e.monat === STATE.adminMonthStr);
+        STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).forEach((ul) => {
+          const hrs = monthEntries.filter((e) => e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
+          let isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+          if (onlyAuszahlung && !isFreigegeben) return;
+          const names = ul.name.split(" "); const lastName = names.pop() || ""; const firstName = names.join(" ") || "";
+          const clean = (s) => `"${(s || "").replace(/"/g, '""')}"`;
+          const hrsStr = formatHours(hrs).replace(".", ",");
+          if (onlyAuszahlung) {
+            csv += `${clean(firstName)};${clean(lastName)};${clean(ul.einrichtung)};${hrsStr};Ja\n`;
+          } else {
+            let status = isFreigegeben ? (hrs >= goal ? "Ziel erreicht" : "Zugeständnis") : "Nicht erreicht";
+            csv += `${clean(ul.einrichtung)};${clean(firstName)};${clean(lastName)};${status};${hrsStr}\n`;
+          }
+        });
+        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = `MSBW_${onlyAuszahlung ? "Lohnbuchhaltung" : "Alle"}_${STATE.adminMonthStr}.csv`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      };
+
+      const exportCsvJahr = () => {
+        const sm = STATE.einstellungen.start_monat || 3;
+        const ys = STATE.adminYearStart;
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const yearlyGoal = goal * 12;
+        const months = getFiscalMonths(sm, ys);
+        let csv = "Vorname;Name;Einrichtung;";
+        months.forEach(m => {
+          const d = new Date(m + '-01');
+          csv += `${d.toLocaleDateString("de-DE", { month: "short", year: "2-digit" })};`;
+        });
+        csv += "Soll Std. Jahr;Ist Std. Jahr;Differenz\n";
+        STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).forEach((ul) => {
+          const names = ul.name.split(" "); const lastName = names.pop() || ""; const firstName = names.join(" ") || "";
+          const clean = (s) => `"${(s || "").replace(/"/g, '""')}"`;
+          let row = `${clean(firstName)};${clean(lastName)};${clean(ul.einrichtung)};`;
+          let yearlyTotal = 0;
+          months.forEach((m) => {
+            const hrs = STATE.entries.filter((e) => e.monat === m && e.uebungsleiter_id === ul.id).reduce((sum, e) => sum + e.stunden, 0);
+            yearlyTotal += hrs;
+            row += `${formatHours(hrs).replace(".", ",")};`;
+          });
+          let diff = yearlyTotal - yearlyGoal;
+          let diffStr = (diff > 0 ? "+" : "") + formatHours(diff).replace(".", ",");
+          row += `${formatHours(yearlyGoal).replace(".", ",")};${formatHours(yearlyTotal).replace(".", ",")};${diffStr}\n`;
+          csv += row;
+        });
+        const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = `MSBW_Jahresübersicht_${ys}-${ys + 1}.csv`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      };
+
+      el("exportCsvBtnJahr").addEventListener("click", () => exportCsvJahr());
+      el("exportCsvBtnLohn").addEventListener("click", () => exportCsv(true));
+      el("exportCsvBtnAlle").addEventListener("click", () => exportCsv(false));
+
+      // ---- User Management Modal ----
+      window.adminEditUser = (id) => {
+        const user = STATE.ulList.find((u) => u.id === id);
+        el("ueModalId").value = id || "";
+        el("ueModalName").value = user ? user.name : "";
+        el("ueModalEinrichtung").value = user ? user.einrichtung : "";
+        el("ueModalPin").value = user ? user.pin : "";
+        el("ueModalTelefon").value = user ? user.telefon || "" : "";
+        el("ueModalEmail").value = user ? user.email || "" : "";
+        el("ueModalStatus").value = user && user.pausiert ? "pausiert" : "aktiv";
+        el("ueModalAdresse").value = user ? user.adresse || "" : "";
+        el("ueModalNotizen").value = user ? user.notizen || "" : "";
+        el("ueModalTitle").textContent = user ? "Übungsleiter bearbeiten" : "Neuen anlegen";
+        el("ueModalDeleteBtn").classList.toggle("hidden", !user);
+        el("ueModalErrorName").classList.add("hidden");
+        el("userEditModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+      };
+      window.closeUserModal = () => el("userEditModal").classList.add("hidden");
+      window.saveUserModal = async () => {
+        const id = el("ueModalId").value;
+        const name = el("ueModalName").value.trim();
+        const pin = el("ueModalPin").value.trim();
+        if (!name) { el("ueModalErrorName").classList.remove("hidden"); return; }
+        if (!/^\d{4}$/.test(pin)) { el("ueModalErrorName").textContent = "PIN muss 4 Ziffern haben!"; el("ueModalErrorName").classList.remove("hidden"); return; }
+        const data = {
+          name, einrichtung: el("ueModalEinrichtung").value, pin,
+          telefon: el("ueModalTelefon").value, email: el("ueModalEmail").value,
+          pausiert: el("ueModalStatus").value === "pausiert",
+          adresse: el("ueModalAdresse").value, notizen: el("ueModalNotizen").value,
+        };
+        if (id) await API.updateUebungsleiter(id, data);
+        else await API.addUebungsleiter(data);
+        STATE.ulList = await API.getUebungsleiterList();
+        window.closeUserModal();
+        renderAdminDashboard();
+        showNotification("Übungsleiter gespeichert");
+      };
+      window.deleteUserModal = async () => {
+        if (!confirm("Übungsleiter wirklich löschen?")) return;
+        const id = el("ueModalId").value;
+        await API.deleteUebungsleiter(id);
+        STATE.ulList = await API.getUebungsleiterList();
+        window.closeUserModal();
+        renderAdminDashboard();
+        showNotification("Übungsleiter gelöscht");
+      };
+
+      // ---- Boot ----
+      window.onload = () => {
+        if (window.lucide) window.lucide.createIcons();
+        setTimeout(initApp, 600);
+      };
+    </script>
+  </body>
+</html>

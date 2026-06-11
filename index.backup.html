@@ -1,0 +1,1456 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MSBW Stundenverwaltung</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#2A9D8F",
+              secondary: "#8A8A8A",
+              bglight: "#F4F4F4",
+              bgdark: "#FFFFFF",
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      body {
+        background-color: #1a1a1a;
+        color: #333333;
+        font-family: sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body.light-bg {
+        background-color: #f4f4f4;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .loader {
+        border: 3px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 3px solid #2a9d8f;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0%   { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .hide-scrollbar::-webkit-scrollbar { display: none; }
+      .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="app"
+      class="max-w-xl mx-auto min-h-screen bg-bglight flex flex-col shadow-2xl relative border-x border-gray-200"
+    >
+      <!-- Top Header -->
+      <header
+        id="appHeader"
+        class="bg-primary text-white px-6 py-5 flex justify-between items-center z-10 sticky top-0"
+      >
+        <div class="flex items-center gap-3">
+          <!-- MSBW Logo -->
+          <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0">
+            <div class="relative w-[26px] h-[26px]">
+              <!-- TL Teal -->
+              <div class="absolute top-0 left-0 w-1/2 h-1/2 pr-0.5 pb-0.5">
+                <div class="relative w-full h-full">
+                  <div class="absolute top-0 left-0 w-[5px] h-[5px] bg-primary rounded-full"></div>
+                  <div class="absolute bottom-0 right-0 w-[8px] h-[8px] bg-primary" style="border-radius: 0 100% 0 100%"></div>
+                </div>
+              </div>
+              <!-- TR Grey -->
+              <div class="absolute top-0 right-0 w-1/2 h-1/2 pl-0.5 pb-0.5">
+                <div class="relative w-full h-full">
+                  <div class="absolute top-0 right-0 w-[5px] h-[5px] bg-gray-400 rounded-full"></div>
+                  <div class="absolute bottom-0 left-0 w-[8px] h-[8px] bg-gray-400" style="border-radius: 100% 0 100% 0"></div>
+                </div>
+              </div>
+              <!-- BL Grey -->
+              <div class="absolute bottom-0 left-0 w-1/2 h-1/2 pr-0.5 pt-0.5">
+                <div class="relative w-full h-full">
+                  <div class="absolute bottom-0 left-0 w-[5px] h-[5px] bg-gray-400 rounded-full"></div>
+                  <div class="absolute top-0 right-0 w-[8px] h-[8px] bg-gray-400" style="border-radius: 100% 0 100% 0"></div>
+                </div>
+              </div>
+              <!-- BR Teal -->
+              <div class="absolute bottom-0 right-0 w-1/2 h-1/2 pl-0.5 pt-0.5">
+                <div class="relative w-full h-full">
+                  <div class="absolute bottom-0 right-0 w-[5px] h-[5px] bg-primary rounded-full"></div>
+                  <div class="absolute top-0 left-0 w-[8px] h-[8px] bg-primary" style="border-radius: 0 100% 0 100%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h1 class="text-xl font-semibold tracking-tight leading-tight">MSBW</h1>
+            <p class="text-xs opacity-90 m-0 p-0">Stundenverwaltung</p>
+          </div>
+        </div>
+        <button
+          id="logoutBtn"
+          class="hidden px-4 py-2 bg-white/10 hover:bg-white/20 rounded-md text-sm transition-colors border border-white/20 font-medium"
+        >
+          Logout
+        </button>
+      </header>
+
+      <!-- Main Content Area -->
+      <main class="flex-1 p-4 overflow-y-auto w-full relative" id="mainContent">
+
+        <!-- Loading Spinner -->
+        <div id="loadingView" class="flex flex-col items-center justify-center h-40 gap-3">
+          <div class="loader"></div>
+          <span class="text-secondary text-sm">Lade Daten...</span>
+        </div>
+
+        <!-- ① Setup View -->
+        <div id="setupView" class="hidden flex-col gap-5 animate-fade-in my-6 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
+          <h2 class="text-2xl font-bold text-gray-800 border-b pb-2">Ersteinrichtung</h2>
+          <p class="text-sm text-secondary">Willkommen! Richte die App einmalig ein.</p>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">Admin-PIN festlegen <span class="font-normal text-secondary">(6 Ziffern)</span></label>
+            <input type="password" inputmode="numeric" id="setupAdminPin"
+              class="p-3 border border-gray-200 rounded-xl text-lg bg-white focus:outline-primary transition text-center tracking-widest"
+              maxlength="6" placeholder="••••••" />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">PIN bestätigen</label>
+            <input type="password" inputmode="numeric" id="setupAdminPin2"
+              class="p-3 border border-gray-200 rounded-xl text-lg bg-white focus:outline-primary transition text-center tracking-widest"
+              maxlength="6" placeholder="••••••" />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">Monatliche Pflichtstunden pro Leiter</label>
+            <input type="number" id="setupPflichtStunden" value="6.75" step="0.25" min="0.5" max="40"
+              class="p-3 border border-gray-200 rounded-xl text-base bg-white focus:outline-primary transition" />
+            <p class="text-xs text-secondary">z.B. 6.75 für 6 Stunden 45 Minuten</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-semibold text-gray-700">Startmonat Fiskaljahr</label>
+              <select id="setupStartMonat" class="p-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-primary transition">
+                <option value="1">Januar</option>
+                <option value="2">Februar</option>
+                <option value="3" selected>März</option>
+                <option value="4">April</option>
+                <option value="5">Mai</option>
+                <option value="6">Juni</option>
+                <option value="7">Juli</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Dezember</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-semibold text-gray-700">Startjahr</label>
+              <input type="number" id="setupStartJahr" value="2026" min="2020" max="2040"
+                class="p-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-primary transition" />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2 bg-bglight p-4 rounded-xl border border-gray-100">
+            <label class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <input type="checkbox" id="setupSeedData" class="w-4 h-4 text-primary rounded" checked />
+              Demo-Daten generieren (zum Testen)
+            </label>
+            <p class="text-xs text-secondary pl-6">Erstellt automatisch ein paar Übungsleiter zum Testen.</p>
+          </div>
+
+          <button id="setupSubmitBtn"
+            class="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition mt-2">
+            Setup abschließen →
+          </button>
+          <div id="setupError" class="text-red-500 text-sm hidden font-medium bg-red-50 p-2 rounded text-center"></div>
+        </div>
+
+        <!-- ② Role Select View -->
+        <div id="roleSelectView" class="hidden flex-col gap-6 animate-fade-in my-10 px-2">
+          <h2 class="text-2xl font-bold text-center text-gray-800">Login Bereich</h2>
+          <p class="text-center text-secondary text-sm mb-2">Bitte wähle deinen Zugang.</p>
+
+          <button id="navUlLoginBtn"
+            class="bg-white border-2 border-primary text-primary py-8 rounded-2xl shadow-sm hover:bg-primary hover:text-white transition flex flex-col items-center gap-3 group active:scale-[0.98]">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-white/20 transition">
+              <i data-lucide="user" class="w-8 h-8"></i>
+            </div>
+            <span class="text-xl font-bold">Übungsleiter/in</span>
+          </button>
+
+          <button id="navAdminLoginBtn"
+            class="bg-white border border-gray-200 text-gray-600 py-4 rounded-xl shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-2 active:scale-[0.98]">
+            <i data-lucide="shield" class="w-5 h-5"></i>
+            <span class="font-medium">Admin Zugang</span>
+          </button>
+        </div>
+
+        <!-- ③ Ü-Leiter Login View -->
+        <div id="ulLoginView" class="hidden flex-col gap-5 animate-fade-in my-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
+          <button id="backToRoleFromUlBtn" class="text-secondary flex items-center gap-1 text-sm hover:text-primary self-start transition">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Zurück
+          </button>
+          <h2 class="text-2xl font-bold text-gray-800">Übungsleiter Login</h2>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">Vor- und Nachname</label>
+            <input type="text" id="ulLoginName" placeholder="z.B. Max Mustermann"
+              class="p-3 border border-gray-200 rounded-xl bg-white focus:outline-primary transition text-gray-800 font-medium" />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">4-stelliger PIN</label>
+            <input type="password" inputmode="numeric" id="ulLoginPin"
+              class="p-3 border border-gray-200 rounded-xl text-lg bg-white tracking-widest focus:outline-primary transition text-center"
+              maxlength="4" placeholder="••••" />
+          </div>
+
+          <button id="ulLoginSubmitBtn"
+            class="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition mt-2">
+            Einloggen
+          </button>
+          <div id="ulLoginError" class="text-red-500 text-sm hidden bg-red-50 p-2 rounded border border-red-100 font-medium text-center"></div>
+        </div>
+
+        <!-- ④ Ü-Leiter Dashboard View -->
+        <div id="ulDashboardView" class="hidden flex-col gap-6 animate-fade-in my-2 p-2">
+          <!-- Welcome Header -->
+          <div class="mb-2">
+            <h2 class="text-3xl font-bold text-primary tracking-tight" id="ulDashName">Hallo, Max</h2>
+            <p class="text-lg font-medium text-gray-500" id="ulDashEinrichtung">Krankenhaus XY</p>
+          </div>
+
+          <!-- Progress Widget -->
+          <div class="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm">
+            <div class="flex justify-between items-end mb-2">
+              <span class="text-4xl font-bold text-primary" id="ulDashHoursCount">0
+                <span class="text-lg text-gray-400 font-normal ml-0.5">/ 0h</span>
+              </span>
+              <span class="text-sm text-primary font-extrabold uppercase tracking-widest bg-bglight px-3 py-1.5 rounded-lg border border-gray-100" id="ulDashMonthStatus">Monat</span>
+            </div>
+            <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mt-3">
+              <div id="ulDashProgressBar" class="bg-primary h-full w-[0%] transition-all duration-500 rounded-full"></div>
+            </div>
+            <p class="text-sm mt-3 text-secondary font-medium" id="ulDashGoalMsg">Noch X Stunden bis zum Pflichtziel</p>
+          </div>
+
+          <!-- Add Entry Form -->
+          <div class="space-y-4 px-1" id="ulAddEntryBlock">
+            <label class="text-sm uppercase font-bold text-secondary tracking-widest flex justify-between items-center">
+              <span>Eintrag hinzufügen</span>
+              <span id="newEntryPreview" class="text-primary font-bold text-sm bg-bglight px-2 py-0.5 rounded">0,0h</span>
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <input type="date" id="newEntryDatum"
+                class="col-span-2 p-3 border border-gray-200 rounded-lg text-base bg-white focus:outline-primary transition" />
+              <div class="relative mt-2">
+                <span class="absolute top-1.5 left-3 text-xs font-bold text-secondary uppercase">Von</span>
+                <input type="time" id="newEntryVon"
+                  class="w-full pt-6 pb-2 px-3 border border-gray-200 rounded-lg text-lg font-medium bg-white focus:outline-primary transition" />
+              </div>
+              <div class="relative mt-2">
+                <span class="absolute top-1.5 left-3 text-xs font-bold text-secondary uppercase">Bis</span>
+                <input type="time" id="newEntryBis"
+                  class="w-full pt-6 pb-2 px-3 border border-gray-200 rounded-lg text-lg font-medium bg-white focus:outline-primary transition" />
+              </div>
+            </div>
+            <button id="addEntryBtn"
+              class="w-full py-4 text-base mt-2 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex justify-center items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> Eintrag speichern
+            </button>
+          </div>
+
+          <!-- Month closed notice -->
+          <div id="ulMonthClosedNotice" class="hidden bg-gray-100 border border-gray-200 rounded-xl p-4 text-center text-sm text-secondary flex items-center justify-center gap-2">
+            <i data-lucide="lock" class="w-4 h-4"></i> Dieser Monat ist abgeschlossen.
+          </div>
+
+          <!-- Recent Entries -->
+          <div class="flex-1 overflow-hidden px-1">
+            <p class="uppercase font-bold text-secondary tracking-widest mb-4 flex justify-between items-center">
+              <span class="text-sm">Letzte Einträge</span>
+              <span class="text-base text-primary font-bold bg-bglight px-3 py-1 rounded-lg" id="ulDashListMonthLabel"></span>
+            </p>
+            <div id="ulEntriesList" class="space-y-3 mb-4">
+              <div class="text-center text-sm text-secondary p-4 bg-bglight rounded-xl">Keine Einträge in diesem Monat.</div>
+            </div>
+
+            <button id="ulSubmitMonthBtn"
+              class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg hover:bg-black active:scale-95 transition-transform flex justify-center items-center gap-2 mt-4">
+              <i data-lucide="lock" class="w-4 h-4"></i> Monat abschließen
+            </button>
+            <p class="text-xs text-secondary mt-2 text-center">Nach dem Abschluss können keine Zeiten mehr bearbeitet werden.</p>
+          </div>
+        </div>
+
+        <!-- ⑤ Admin Login View -->
+        <div id="adminLoginView" class="hidden flex-col gap-5 animate-fade-in my-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-sm">
+          <button id="backToRoleFromAdminBtn" class="text-secondary flex items-center gap-1 text-sm hover:text-gray-800 self-start transition">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Zurück
+          </button>
+          <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <i data-lucide="shield" class="text-gray-500 w-6 h-6"></i> Admin Login
+          </h2>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-gray-700">6-stelliger Master-PIN</label>
+            <input type="password" inputmode="numeric" id="adminLoginPin"
+              class="p-3 border border-gray-200 rounded-xl text-lg bg-white tracking-widest focus:outline-gray-400 transition text-center"
+              maxlength="6" placeholder="••••••" />
+          </div>
+
+          <button id="adminLoginSubmitBtn"
+            class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-lg shadow-gray-900/20 active:scale-95 transition mt-2">
+            Einloggen
+          </button>
+          <div id="adminLoginError" class="text-red-500 text-sm hidden font-medium text-center bg-red-50 p-2 rounded"></div>
+        </div>
+
+        <!-- ⑥ Admin Dashboard View -->
+        <div id="adminDashboardView" class="hidden flex-col gap-4 animate-fade-in my-2">
+          <!-- Tabs Navigation -->
+          <div class="px-2 pt-2 border-b border-gray-200 text-sm flex overflow-x-auto hide-scrollbar">
+            <button onclick="window.switchAdminTab('abrechnung')" id="tabBtn-abrechnung"
+              class="admin-tab-btn px-4 py-3 font-bold text-primary border-b-2 border-primary whitespace-nowrap outline-none transition-colors">
+              Stunden
+            </button>
+            <button onclick="window.switchAdminTab('lohn')" id="tabBtn-lohn"
+              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors">
+              Lohnbuchhaltung
+            </button>
+            <button onclick="window.switchAdminTab('jahr')" id="tabBtn-jahr"
+              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors">
+              Jahresübersicht
+            </button>
+            <button onclick="window.switchAdminTab('verwaltung')" id="tabBtn-verwaltung"
+              class="admin-tab-btn px-4 py-3 font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent whitespace-nowrap outline-none transition-colors">
+              Ü-Leiter
+            </button>
+          </div>
+
+          <!-- Tab: Stunden (Abrechnung) -->
+          <div id="adminTab-abrechnung" class="flex flex-col gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+              <button id="adminPrevMonthBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+              </button>
+              <h3 class="font-bold text-lg text-gray-800" id="adminSelectedMonthLabel">Juni 2026</h3>
+              <button id="adminNextMonthBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex-1 overflow-hidden flex flex-col mb-4">
+              <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 class="font-bold text-sm text-gray-800">Übersicht & Freigaben</h3>
+                <button id="adminAddEntryBtn"
+                  class="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Eintrag hinzufügen
+                </button>
+              </div>
+              <div id="adminUsersList" class="flex flex-col bg-white divide-y divide-gray-100"></div>
+            </div>
+          </div>
+
+          <!-- Tab: Lohnbuchhaltung -->
+          <div id="adminTab-lohn" class="hidden flex-col gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+              <button id="adminLohnPrevBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+              </button>
+              <h3 class="font-bold text-lg text-gray-800" id="adminLohnMonthLabel">Juni 2026</h3>
+              <button id="adminLohnNextBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
+              <!-- Export Lohnbüro -->
+              <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i>
+                  </div>
+                  <div>
+                    <div class="font-bold text-sm text-gray-900">Export Lohnbüro</div>
+                    <div class="text-xs text-secondary">Nur freigegebene Trainer</div>
+                  </div>
+                </div>
+                <p class="text-xs text-secondary mb-3">Enthält nur Trainer mit Ziel erreicht <strong>oder</strong> Kulanz gewährt.<br>Spalten: Vorname; Name; Klinik; Gesamtstunden; Auszahlung</p>
+                <button id="exportCsvBtnLohn"
+                  class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl shadow-sm hover:scale-[1.01] transition">
+                  <i data-lucide="file-down" class="w-4 h-4"></i> CSV Lohnbüro herunterladen
+                </button>
+              </div>
+              <!-- Export Alle -->
+              <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <i data-lucide="download" class="w-4 h-4 text-blue-600"></i>
+                  </div>
+                  <div>
+                    <div class="font-bold text-sm text-gray-900">Export Alle</div>
+                    <div class="text-xs text-secondary">Vollständige Übersicht</div>
+                  </div>
+                </div>
+                <p class="text-xs text-secondary mb-3">Enthält alle Trainer.<br>Spalten: Einrichtung; Vorname; Name; Status; Gesamtstunden</p>
+                <button id="exportCsvBtnAlle"
+                  class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:scale-[1.01] transition">
+                  <i data-lucide="file-down" class="w-4 h-4"></i> CSV Alle herunterladen
+                </button>
+              </div>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4">
+              <div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+                <h3 class="font-bold text-sm text-gray-800">Vorschau</h3>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs whitespace-nowrap">
+                  <thead>
+                    <tr class="bg-gray-50 text-gray-500 uppercase font-bold border-b border-gray-100">
+                      <th class="p-3 text-left">Name</th>
+                      <th class="p-3 text-left">Einrichtung</th>
+                      <th class="p-3 text-right">Stunden</th>
+                      <th class="p-3 text-center">Status</th>
+                      <th class="p-3 text-center">Auszahlung</th>
+                    </tr>
+                  </thead>
+                  <tbody id="lohnVorschauTable" class="divide-y divide-gray-100"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Jahresübersicht -->
+          <div id="adminTab-jahr" class="hidden flex-col gap-4">
+            <div class="flex justify-between items-center px-1 mt-2">
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">Jahresübersicht</h3>
+                <p class="text-xs text-secondary" id="adminSelectedYearLabel">März 2026 – Feb 2027</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="adminPrevYearBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
+                  <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+                <button id="adminNextYearBtn" class="p-2 hover:bg-bglight rounded-lg text-gray-600 transition">
+                  <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+                <button id="exportCsvBtnJahr"
+                  class="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Jahr Export
+                </button>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto pb-2 mb-4 hide-scrollbar">
+              <table class="w-full text-left text-xs whitespace-nowrap min-w-[600px]">
+                <thead>
+                  <tr class="bg-gray-50 text-gray-500 uppercase font-bold border-b border-gray-100" id="jahrTableHead">
+                    <th class="p-3 sticky left-0 bg-gray-50 z-10 border-r border-gray-100 min-w-[140px]">Name</th>
+                  </tr>
+                </thead>
+                <tbody id="jahrTableBody" class="divide-y divide-gray-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Ü-Leiter Verwaltung -->
+          <div id="adminTab-verwaltung" class="hidden flex-col gap-4 mb-4">
+            <div class="flex justify-between items-center px-1 mt-2">
+              <h3 class="font-bold text-lg text-gray-800">Übungsleiter</h3>
+              <button onclick="window.adminEditUser('')"
+                class="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md shadow-sm hover:scale-[1.02] transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Neu anlegen
+              </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col divide-y divide-gray-100" id="adminVerwaltungList"></div>
+          </div>
+        </div>
+
+        <!-- Modal: Eintrag bearbeiten -->
+        <div id="entryEditModal" class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4">
+          <div class="bg-white rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 class="font-bold text-lg text-gray-800">Eintrag bearbeiten</h3>
+              <button onclick="window.closeEntryModal()" class="text-gray-400 hover:text-gray-800 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-5 flex flex-col gap-4">
+              <input type="hidden" id="entryModalId" />
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Datum</label>
+                <input type="date" id="entryModalDatum"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Von</label>
+                  <input type="time" id="entryModalVon"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Bis</label>
+                  <input type="time" id="entryModalBis"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                </div>
+              </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+              <button onclick="window.closeEntryModal()" class="px-4 py-2 font-semibold text-sm text-gray-600 active:scale-95 transition">Abbrechen</button>
+              <button onclick="window.saveEntryModal()" class="px-4 py-2 bg-primary font-bold text-sm text-white rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition">Speichern</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal: Admin Eintrag hinzufügen -->
+        <div id="adminAddEntryModal" class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4">
+          <div class="bg-white rounded-2xl w-full max-w-sm flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 class="font-bold text-lg text-gray-800">Eintrag hinzufügen</h3>
+              <button onclick="window.closeAdminAddModal()" class="text-gray-400 hover:text-gray-800 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-5 flex flex-col gap-4">
+              <input type="hidden" id="adminAddEntryUserId" />
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Übungsleiter</label>
+                <select id="adminAddEntryUser" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition bg-white"></select>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Datum</label>
+                <input type="date" id="adminAddEntryDatum"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Von</label>
+                  <input type="time" id="adminAddEntryVon" value="09:00"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Bis</label>
+                  <input type="time" id="adminAddEntryBis" value="11:00"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                </div>
+              </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+              <button onclick="window.closeAdminAddModal()" class="px-4 py-2 font-semibold text-sm text-gray-600 active:scale-95 transition">Abbrechen</button>
+              <button onclick="window.saveAdminAddEntry()" class="px-4 py-2 bg-primary font-bold text-sm text-white rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition">Hinzufügen</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal: Ü-Leiter anlegen/bearbeiten -->
+        <div id="userEditModal" class="hidden fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center p-4">
+          <div class="bg-white rounded-2xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in relative z-10">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 class="font-bold text-lg text-gray-800" id="ueModalTitle">Übungsleiter bearbeiten</h3>
+              <button onclick="window.closeUserModal()" class="text-gray-400 hover:text-gray-800 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto flex flex-col gap-3">
+              <input type="hidden" id="ueModalId" />
+              <div>
+                <label class="text-xs font-semibold text-gray-700 flex justify-between">
+                  Vor- und Nachname *
+                  <span id="ueModalErrorName" class="text-red-500 hidden">Pflichtfeld!</span>
+                </label>
+                <input type="text" id="ueModalName"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Einrichtung / Zuordnung *</label>
+                <input type="text" id="ueModalEinrichtung"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Telefon</label>
+                  <input type="tel" id="ueModalTelefon" placeholder="+49..."
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">4-stelliger PIN *</label>
+                  <input type="password" inputmode="numeric" maxlength="4" id="ueModalPin"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm tracking-widest focus:outline-primary transition text-center" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">E-Mail</label>
+                  <input type="email" id="ueModalEmail" placeholder="name@beispiel.de"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition" />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-700">Status *</label>
+                  <select id="ueModalStatus"
+                    class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary transition bg-white">
+                    <option value="aktiv">Aktiv</option>
+                    <option value="pausiert">Pausiert</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Adresse</label>
+                <textarea id="ueModalAdresse" rows="2"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary resize-none transition"
+                  placeholder="Straße, PLZ Ort"></textarea>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-700">Notizen</label>
+                <textarea id="ueModalNotizen" rows="2"
+                  class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:outline-primary resize-none transition"
+                  placeholder="Ausfälle, Urlaub, Besonderheiten..."></textarea>
+              </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+              <button onclick="window.deleteUserModal()" id="ueModalDeleteBtn"
+                class="text-red-500 hover:text-red-700 p-2 text-sm font-bold transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+              <div class="flex gap-2">
+                <button onclick="window.closeUserModal()"
+                  class="px-4 py-2 font-medium text-sm text-gray-600 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition">
+                  Abbrechen
+                </button>
+                <button onclick="window.saveUserModal()"
+                  class="px-4 py-2 font-bold text-sm text-white bg-primary rounded-lg shadow-sm hover:bg-primary/90 transition">
+                  Speichern
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Notification -->
+        <div id="notificationOverlay"
+          class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium transition-opacity duration-300 opacity-0 pointer-events-none flex items-center gap-2">
+          <i data-lucide="info" class="w-4 h-4"></i>
+          <span id="notificationMsg">Info</span>
+        </div>
+      </main>
+    </div>
+
+    <script type="module">
+      // ============================================================
+      // DATA LAYER — localStorage (swap for Firebase later)
+      // ============================================================
+      const generateId = () => Math.random().toString(36).substring(2, 10);
+
+      let dbMockState = { einstellungen: null, uebungsleiter: {}, eintraege: {}, freigaben: {}, abschluesse: {} };
+      try {
+        const stored = localStorage.getItem("msbw_db");
+        if (stored) dbMockState = { ...dbMockState, ...JSON.parse(stored) };
+      } catch (e) {}
+      const saveMock = () => localStorage.setItem("msbw_db", JSON.stringify(dbMockState));
+
+      const API = {
+        getEinstellungen: async () => dbMockState.einstellungen,
+        setEinstellungen: async (d) => { dbMockState.einstellungen = d; saveMock(); },
+        getUebungsleiterList: async () => Object.entries(dbMockState.uebungsleiter).map(([id, d]) => ({ id, ...d })),
+        addUebungsleiter: async (d) => { const id = generateId(); dbMockState.uebungsleiter[id] = d; saveMock(); return id; },
+        updateUebungsleiter: async (id, d) => { dbMockState.uebungsleiter[id] = { ...dbMockState.uebungsleiter[id], ...d }; saveMock(); },
+        deleteUebungsleiter: async (id) => { delete dbMockState.uebungsleiter[id]; saveMock(); },
+        getFreigaben: async () => dbMockState.freigaben || {},
+        setFreigabe: async (m, uid, v) => { if (!dbMockState.freigaben[m]) dbMockState.freigaben[m] = {}; dbMockState.freigaben[m][uid] = v; saveMock(); },
+        getAbschluesse: async () => dbMockState.abschluesse || {},
+        setAbschluss: async (m, uid, v) => { if (!dbMockState.abschluesse[m]) dbMockState.abschluesse[m] = {}; dbMockState.abschluesse[m][uid] = v; saveMock(); },
+        getEintraege: async () => Object.entries(dbMockState.eintraege).map(([id, d]) => ({ id, ...d })),
+        addEintrag: async (d) => { const id = generateId(); dbMockState.eintraege[id] = d; saveMock(); return id; },
+        updateEintrag: async (id, d) => { dbMockState.eintraege[id] = { ...dbMockState.eintraege[id], ...d }; saveMock(); },
+        deleteEintrag: async (id) => { delete dbMockState.eintraege[id]; saveMock(); },
+      };
+
+      // ============================================================
+      // STATE
+      // ============================================================
+      const STATE = {
+        view: "loadingView",
+        einstellungen: null,
+        ulList: [],
+        entries: [],
+        freigaben: {},
+        abschluesse: {},
+        currentUser: null,
+        isAdmin: false,
+        adminMonthStr: new Date().toISOString().substring(0, 7),
+        adminTab: "abrechnung",
+        adminYearStart: new Date().getFullYear(),
+        ulActiveMonthStr: null,
+      };
+
+      // ============================================================
+      // HELPERS
+      // ============================================================
+      const el = (id) => document.getElementById(id);
+      const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+      const MONTHS_DE_SHORT = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+      const showNotification = (msg, duration = 3000) => {
+        const overlay = el("notificationOverlay");
+        el("notificationMsg").textContent = msg;
+        overlay.classList.remove("opacity-0", "pointer-events-none");
+        setTimeout(() => overlay.classList.add("opacity-0", "pointer-events-none"), duration);
+      };
+
+      const calcHours = (von, bis) => {
+        if (!von || !bis) return 0;
+        const [vH, vM] = von.split(":").map(Number);
+        const [bH, bM] = bis.split(":").map(Number);
+        return Math.max(0, parseFloat((bH - vH + (bM - vM) / 60).toFixed(2)));
+      };
+
+      const fmtH = (h) => h.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+      const fmtMonth = (yyyyMm) => {
+        const [y, m] = yyyyMm.split("-");
+        return `${MONTHS_DE[parseInt(m) - 1]} ${y}`;
+      };
+
+      // Get 12 months of fiscal year starting at month (1-12) and year
+      const getFiscalMonths = (startMonth, startYear) => {
+        const months = [];
+        for (let i = 0; i < 12; i++) {
+          let m = ((startMonth - 1 + i) % 12) + 1;
+          let y = startYear + Math.floor((startMonth - 1 + i) / 12);
+          months.push(`${y}-${String(m).padStart(2, '0')}`);
+        }
+        return months;
+      };
+
+      // ============================================================
+      // NAVIGATION
+      // ============================================================
+      const setBodyBg = (dark) => {
+        if (dark) document.body.classList.remove("light-bg");
+        else document.body.classList.add("light-bg");
+      };
+
+      const switchView = (viewId) => {
+        const views = ["loadingView","setupView","roleSelectView","ulLoginView","ulDashboardView","adminLoginView","adminDashboardView"];
+        views.forEach((v) => {
+          const e = el(v);
+          if (!e) return;
+          if (v === viewId) { e.classList.remove("hidden"); e.classList.add("flex"); }
+          else { e.classList.add("hidden"); e.classList.remove("flex"); }
+        });
+        STATE.view = viewId;
+
+        // Show/hide logout
+        if (STATE.currentUser || STATE.isAdmin) el("logoutBtn").classList.remove("hidden");
+        else el("logoutBtn").classList.add("hidden");
+
+        // Dark bg for login/setup, light for dashboards
+        const darkViews = ["loadingView","setupView","roleSelectView","ulLoginView","adminLoginView"];
+        setBodyBg(darkViews.includes(viewId));
+
+        // Admin: expand width
+        const app = el("app");
+        if (STATE.isAdmin && viewId === "adminDashboardView") {
+          app.classList.replace("max-w-xl", "max-w-2xl");
+        } else {
+          if (app.classList.contains("max-w-2xl")) app.classList.replace("max-w-2xl", "max-w-xl");
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      const logout = () => {
+        STATE.currentUser = null;
+        STATE.isAdmin = false;
+        switchView("roleSelectView");
+      };
+
+      // ============================================================
+      // INIT
+      // ============================================================
+      const initApp = async () => {
+        STATE.einstellungen = await API.getEinstellungen();
+        if (!STATE.einstellungen) {
+          switchView("setupView");
+        } else {
+          await loadDataAndStart();
+        }
+      };
+
+      const loadDataAndStart = async () => {
+        STATE.ulList = await API.getUebungsleiterList();
+        STATE.entries = await API.getEintraege();
+        STATE.freigaben = await API.getFreigaben();
+        STATE.abschluesse = await API.getAbschluesse();
+        // Default year start from settings
+        STATE.adminYearStart = STATE.einstellungen.start_jahr || new Date().getFullYear();
+
+        if (STATE.currentUser) renderUlDashboard();
+        else if (STATE.isAdmin) renderAdminDashboard();
+        else switchView("roleSelectView");
+      };
+
+      // ============================================================
+      // SETUP
+      // ============================================================
+      el("setupSubmitBtn").addEventListener("click", async () => {
+        const pin = el("setupAdminPin").value;
+        const pin2 = el("setupAdminPin2").value;
+        const stunden = parseFloat(el("setupPflichtStunden").value);
+        const startMonat = parseInt(el("setupStartMonat").value);
+        const startJahr = parseInt(el("setupStartJahr").value);
+        const seed = el("setupSeedData").checked;
+        const err = el("setupError");
+        err.classList.add("hidden");
+
+        if (!/^\d{6}$/.test(pin)) { err.textContent = "Admin-PIN muss genau 6 Ziffern haben."; err.classList.remove("hidden"); return; }
+        if (pin !== pin2) { err.textContent = "Die PINs stimmen nicht überein."; err.classList.remove("hidden"); return; }
+        if (isNaN(stunden) || stunden <= 0) { err.textContent = "Bitte eine gültige Stundenzahl eingeben."; err.classList.remove("hidden"); return; }
+
+        await API.setEinstellungen({ admin_pin: pin, pflicht_stunden: stunden, start_monat: startMonat, start_jahr: startJahr });
+
+        if (seed) {
+          await API.addUebungsleiter({ name: "Max Mustermann", einrichtung: "Krankenhaus Villingen", pin: "1234", adresse: "Musterstraße 1", notizen: "Demo" });
+          await API.addUebungsleiter({ name: "Aisha Yilmaz", einrichtung: "Klinikum Singen", pin: "0000", adresse: "", notizen: "" });
+          await API.addUebungsleiter({ name: "Fatima Ali", einrichtung: "Marienhospital Stuttgart", pin: "4321", adresse: "", notizen: "Fällt manchmal aus." });
+        }
+
+        showNotification("Setup erfolgreich abgeschlossen!");
+        initApp();
+      });
+
+      // ============================================================
+      // ROLE SELECT
+      // ============================================================
+      el("navUlLoginBtn").addEventListener("click", () => {
+        el("ulLoginName").value = ""; el("ulLoginPin").value = "";
+        el("ulLoginError").classList.add("hidden");
+        switchView("ulLoginView");
+      });
+      el("navAdminLoginBtn").addEventListener("click", () => {
+        el("adminLoginPin").value = "";
+        el("adminLoginError").classList.add("hidden");
+        switchView("adminLoginView");
+      });
+      el("backToRoleFromUlBtn").addEventListener("click", () => switchView("roleSelectView"));
+      el("backToRoleFromAdminBtn").addEventListener("click", () => switchView("roleSelectView"));
+      el("logoutBtn").addEventListener("click", logout);
+
+      // ============================================================
+      // ÜBUNGSLEITER LOGIN
+      // ============================================================
+      el("ulLoginSubmitBtn").addEventListener("click", () => {
+        const nameVal = el("ulLoginName").value.trim().toLowerCase();
+        const pinVal = el("ulLoginPin").value;
+        const err = el("ulLoginError");
+        if (!nameVal || !pinVal) { err.textContent = "Bitte Namen und PIN eingeben."; err.classList.remove("hidden"); return; }
+        const user = STATE.ulList.find((u) => u.name.toLowerCase() === nameVal && u.pin === pinVal);
+        if (!user) { err.textContent = "Falscher Name oder PIN."; err.classList.remove("hidden"); return; }
+        if (user.pausiert) { err.textContent = "Ihr Konto ist pausiert. Bitte Admin kontaktieren."; err.classList.remove("hidden"); return; }
+        STATE.currentUser = user;
+        renderUlDashboard();
+      });
+
+      // ============================================================
+      // ÜBUNGSLEITER DASHBOARD
+      // ============================================================
+      const renderUlDashboard = () => {
+        switchView("ulDashboardView");
+        const user = STATE.currentUser;
+        el("ulDashName").textContent = `Hallo, ${user.name.split(" ")[0]}`;
+        el("ulDashEinrichtung").textContent = user.einrichtung || "";
+
+        const todayStr = new Date().toISOString().substring(0, 7);
+        const settings = STATE.einstellungen;
+        const startM = settings.start_monat || 3;
+        const startY = settings.start_jahr || new Date().getFullYear();
+
+        // Get all fiscal months up to today
+        const fiscalMonths = getFiscalMonths(startM, startY).filter(m => m <= todayStr);
+        // Extend to another year if needed
+        for (let i = 0; i < 24; i++) {
+          let m = ((startM - 1 + i) % 12) + 1;
+          let y = startY + Math.floor((startM - 1 + i) / 12);
+          const ym = `${y}-${String(m).padStart(2,'0')}`;
+          if (ym > todayStr) break;
+          if (!fiscalMonths.includes(ym)) fiscalMonths.push(ym);
+        }
+        fiscalMonths.sort();
+
+        // Find oldest unclosed month
+        let activeMonth = todayStr;
+        for (const m of fiscalMonths) {
+          if (!(STATE.abschluesse[m] && STATE.abschluesse[m][user.id])) {
+            activeMonth = m;
+            break;
+          }
+        }
+        STATE.ulActiveMonthStr = activeMonth;
+
+        const isClosed = STATE.abschluesse[activeMonth] && STATE.abschluesse[activeMonth][user.id];
+
+        // Date picker constraints
+        const [ay, am] = activeMonth.split('-').map(Number);
+        const lastDay = new Date(ay, am, 0).getDate();
+        el("newEntryDatum").min = `${activeMonth}-01`;
+        el("newEntryDatum").max = `${activeMonth}-${String(lastDay).padStart(2,'0')}`;
+        el("newEntryDatum").value = activeMonth <= todayStr
+          ? (new Date().toISOString().substring(0,7) === activeMonth ? new Date().toISOString().substring(0,10) : `${activeMonth}-01`)
+          : `${activeMonth}-01`;
+
+        el("ulDashListMonthLabel").textContent = fmtMonth(activeMonth);
+        el("ulDashMonthStatus").textContent = fmtMonth(activeMonth);
+
+        // Show/hide add form based on closed state
+        el("ulAddEntryBlock").classList.toggle("hidden", !!isClosed);
+        el("ulMonthClosedNotice").classList.toggle("hidden", !isClosed);
+        el("ulSubmitMonthBtn").classList.toggle("hidden", !!isClosed);
+
+        updateUlProgress(activeMonth);
+      };
+
+      const updateUlProgress = (monthStr) => {
+        const userEntries = STATE.entries
+          .filter(e => e.uebungsleiter_id === STATE.currentUser.id && e.monat === monthStr)
+          .sort((a, b) => b.datum.localeCompare(a.datum));
+        const total = userEntries.reduce((s, e) => s + e.stunden, 0);
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const pct = Math.min(100, Math.round((total / goal) * 100));
+
+        el("ulDashHoursCount").innerHTML = `${fmtH(total)} <span class="text-2xl text-gray-400 font-normal ml-1">/ ${fmtH(goal)}h</span>`;
+        const bar = el("ulDashProgressBar");
+        bar.style.width = `${pct}%`;
+        if (pct >= 100) {
+          bar.classList.remove("bg-primary"); bar.classList.add("bg-emerald-500");
+          el("ulDashGoalMsg").innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> Ziel erreicht!</span>`;
+        } else {
+          bar.classList.remove("bg-emerald-500"); bar.classList.add("bg-primary");
+          el("ulDashGoalMsg").innerHTML = `Noch <span class="font-bold text-gray-600">${fmtH(goal - total)}</span> Stunden bis zum Pflichtziel`;
+        }
+
+        const isClosed = STATE.abschluesse[monthStr] && STATE.abschluesse[monthStr][STATE.currentUser.id];
+        const listDiv = el("ulEntriesList");
+        if (userEntries.length === 0) {
+          listDiv.innerHTML = '<div class="text-center text-sm text-secondary p-4 bg-bglight rounded-xl border border-gray-100">Keine Einträge in diesem Monat.</div>';
+        } else {
+          listDiv.innerHTML = userEntries.map(e => `
+            <div class="flex justify-between items-center p-3 bg-bglight rounded-lg border-l-4 border-primary">
+              <div>
+                <p class="font-bold text-gray-800 text-lg">${new Date(e.datum + 'T12:00:00').toLocaleDateString("de-DE")}</p>
+                <p class="text-sm text-secondary mt-0.5 font-medium">${e.von} – ${e.bis} Uhr</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-mono font-bold text-primary text-2xl">${fmtH(e.stunden)}h</span>
+                ${!isClosed ? `<button onclick="window.ulDeleteEntry('${e.id}')" class="text-gray-300 hover:text-red-500 transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+              </div>
+            </div>
+          `).join("");
+        }
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      // Add entry
+      const previewHours = () => {
+        const h = calcHours(el("newEntryVon").value, el("newEntryBis").value);
+        el("newEntryPreview").textContent = fmtH(h) + "h";
+        el("addEntryBtn").disabled = h <= 0;
+      };
+      el("newEntryVon").addEventListener("input", previewHours);
+      el("newEntryBis").addEventListener("input", previewHours);
+
+      el("addEntryBtn").addEventListener("click", async () => {
+        const datum = el("newEntryDatum").value;
+        const von = el("newEntryVon").value;
+        const bis = el("newEntryBis").value;
+        const stunden = calcHours(von, bis);
+        if (!datum || !von || !bis || stunden <= 0) return;
+
+        const btn = el("addEntryBtn");
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:white;"></div> Speichern...';
+
+        await API.addEintrag({ uebungsleiter_id: STATE.currentUser.id, datum, monat: datum.substring(0, 7), von, bis, stunden });
+        STATE.entries = await API.getEintraege();
+        showNotification("Eintrag gespeichert!");
+        el("newEntryVon").value = ""; el("newEntryBis").value = "";
+        previewHours();
+        btn.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Eintrag speichern';
+        updateUlProgress(datum.substring(0, 7));
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      window.ulDeleteEntry = async (id) => {
+        if (!confirm("Eintrag löschen?")) return;
+        await API.deleteEintrag(id);
+        STATE.entries = await API.getEintraege();
+        updateUlProgress(STATE.ulActiveMonthStr);
+        showNotification("Eintrag gelöscht");
+      };
+
+      // Close month
+      el("ulSubmitMonthBtn").addEventListener("click", async () => {
+        const monat = STATE.ulActiveMonthStr;
+        if (!monat) return;
+        if (!confirm(`Den Monat ${fmtMonth(monat)} endgültig abschließen? Danach können keine Zeiten mehr bearbeitet werden.`)) return;
+        await API.setAbschluss(monat, STATE.currentUser.id, true);
+        STATE.abschluesse = await API.getAbschluesse();
+        showNotification(`${fmtMonth(monat)} abgeschlossen!`);
+        renderUlDashboard();
+      });
+
+      // ============================================================
+      // ADMIN LOGIN
+      // ============================================================
+      el("adminLoginSubmitBtn").addEventListener("click", () => {
+        const pin = el("adminLoginPin").value;
+        const err = el("adminLoginError");
+        if (pin === STATE.einstellungen.admin_pin) {
+          STATE.isAdmin = true;
+          renderAdminDashboard();
+        } else {
+          err.textContent = "Falscher Admin-PIN.";
+          err.classList.remove("hidden");
+        }
+      });
+
+      // ============================================================
+      // ADMIN DASHBOARD
+      // ============================================================
+      window.switchAdminTab = (tab) => {
+        STATE.adminTab = tab;
+        document.querySelectorAll(".admin-tab-btn").forEach((b) => {
+          b.classList.remove("text-primary","border-primary","font-bold");
+          b.classList.add("text-gray-500","border-transparent","font-medium");
+        });
+        const active = el(`tabBtn-${tab}`);
+        active.classList.remove("text-gray-500","border-transparent","font-medium");
+        active.classList.add("text-primary","border-primary","font-bold");
+
+        ["abrechnung","lohn","jahr","verwaltung"].forEach(t => {
+          el(`adminTab-${t}`).classList.add("hidden");
+          el(`adminTab-${t}`).classList.remove("flex");
+        });
+        el(`adminTab-${tab}`).classList.remove("hidden");
+        el(`adminTab-${tab}`).classList.add("flex");
+        renderAdminDashboard();
+      };
+
+      const renderAdminDashboard = () => {
+        switchView("adminDashboardView");
+        if (STATE.adminTab === "abrechnung") renderAdminAbrechnung();
+        else if (STATE.adminTab === "lohn") renderAdminLohn();
+        else if (STATE.adminTab === "jahr") renderAdminJahr();
+        else if (STATE.adminTab === "verwaltung") renderAdminVerwaltung();
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      // --- Stunden Tab ---
+      const renderAdminAbrechnung = () => {
+        el("adminSelectedMonthLabel").textContent = fmtMonth(STATE.adminMonthStr);
+        const monthEntries = STATE.entries.filter(e => e.monat === STATE.adminMonthStr);
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const listDiv = el("adminUsersList");
+        if (STATE.ulList.length === 0) {
+          listDiv.innerHTML = '<p class="text-center text-sm text-secondary p-6">Keine Übungsleiter angelegt.</p>';
+          return;
+        }
+
+        const html = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map(ul => {
+          const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s, e) => s + e.stunden, 0);
+          const isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+          const isAbgeschlossen = STATE.abschluesse[STATE.adminMonthStr] && STATE.abschluesse[STATE.adminMonthStr][ul.id];
+
+          let statusUI = "", bgLine = "";
+          if (hrs >= goal) {
+            statusUI = `<div class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="check" class="w-3 h-3"></i> Ziel erreicht</div>`;
+            bgLine = "border-l-4 border-emerald-400";
+          } else if (isFreigegeben) {
+            statusUI = `<div class="text-primary bg-primary/10 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="hand-heart" class="w-3 h-3"></i> Zugeständnis (Fehlt: ${fmtH(goal - hrs)}h)</div>`;
+            bgLine = "border-l-4 border-primary";
+          } else {
+            statusUI = `<div class="text-red-500 bg-red-50 px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1 w-max"><i data-lucide="triangle-alert" class="w-3 h-3"></i> Nicht erreicht (Fehlt: ${fmtH(goal - hrs)}h)</div>`;
+            bgLine = "border-l-4 border-red-400 opacity-80";
+          }
+
+          const uEntries = monthEntries.filter(e => e.uebungsleiter_id === ul.id).sort((a, b) => a.datum.localeCompare(b.datum));
+          const entriesHtml = uEntries.length === 0
+            ? `<div class="text-center text-xs text-gray-400 py-3">Keine Einträge für diesen Monat</div>`
+            : uEntries.map(e => `
+              <div class="flex justify-between items-center py-2">
+                <span class="text-xs text-gray-600 font-medium">${new Date(e.datum + 'T12:00:00').toLocaleDateString("de-DE")} <span class="text-gray-400 font-normal">(${e.von}–${e.bis})</span></span>
+                <div class="flex items-center gap-3">
+                  <span class="font-mono text-primary font-bold text-sm">${fmtH(e.stunden)}h</span>
+                  <button onclick="window.adminEditEntry('${e.id}')" class="text-gray-300 hover:text-primary transition"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                  <button onclick="window.adminDeleteEntry('${e.id}')" class="text-gray-300 hover:text-red-500 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div>
+              </div>`).join("");
+
+          const kulanzToggle = hrs < goal ? `
+            <div class="flex items-center justify-between border-t border-gray-100 pt-3 mt-1">
+              <div>
+                <div class="text-[11px] uppercase font-bold text-gray-700 tracking-wider">Auszahlung genehmigen (Zugeständnis)</div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" ${isFreigegeben ? "checked" : ""} onchange="window.adminToggleKulanz('${ul.id}', this.checked)" class="sr-only peer">
+                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+              </label>
+            </div>` : "";
+
+          return `
+            <div class="group flex flex-col transition-all border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+              <div class="p-3 cursor-pointer" onclick="document.getElementById('det-${ul.id}').classList.toggle('hidden')">
+                <div class="flex items-center ${bgLine} pl-3 text-sm justify-between">
+                  <div>
+                    <div class="font-bold text-gray-800 leading-tight flex items-center gap-1 flex-wrap">
+                      ${ul.name}
+                      ${ul.pausiert ? '<span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1 py-0.5 rounded uppercase">Pausiert</span>' : ""}
+                      ${isAbgeschlossen ? '<span class="text-[10px] font-bold text-gray-600 bg-gray-200 px-1 py-0.5 rounded uppercase inline-flex items-center gap-0.5"><i data-lucide="lock" class="w-3 h-3"></i> Abgeschl.</span>' : ""}
+                    </div>
+                    <div class="text-[10px] text-secondary uppercase tracking-wider mt-0.5">${ul.einrichtung}</div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="font-mono text-lg font-bold ${hrs > 0 ? "text-gray-900" : "text-gray-400"}">${fmtH(hrs)}</div>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition"></i>
+                  </div>
+                </div>
+              </div>
+              <div id="det-${ul.id}" class="hidden flex-col p-3 pt-0 ml-3 mr-3 mt-1">
+                <div class="mb-3">${statusUI}</div>
+                <div class="bg-white rounded-xl border border-gray-100 px-3 divide-y divide-gray-50 shadow-sm">${entriesHtml}</div>
+                ${kulanzToggle}
+              </div>
+            </div>`;
+        }).join("");
+        listDiv.innerHTML = html;
+      };
+
+      // --- Lohnbuchhaltung Tab ---
+      const renderAdminLohn = () => {
+        el("adminLohnMonthLabel").textContent = fmtMonth(STATE.adminMonthStr);
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const monthEntries = STATE.entries.filter(e => e.monat === STATE.adminMonthStr);
+        const tbody = el("lohnVorschauTable");
+        tbody.innerHTML = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map(ul => {
+          const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s, e) => s + e.stunden, 0);
+          const reached = hrs >= goal;
+          const concession = STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id];
+          const auszahlung = reached || concession;
+          return `<tr class="hover:bg-gray-50">
+            <td class="p-3 font-medium text-gray-800">${ul.name}</td>
+            <td class="p-3 text-gray-500">${ul.einrichtung}</td>
+            <td class="p-3 text-right font-mono font-bold text-primary">${fmtH(hrs)}</td>
+            <td class="p-3 text-center">${reached ? '<span class="text-emerald-600 bg-emerald-50 text-xs font-bold px-2 py-0.5 rounded">Erreicht</span>' : '<span class="text-red-500 bg-red-50 text-xs font-bold px-2 py-0.5 rounded">Fehlt</span>'}</td>
+            <td class="p-3 text-center">${auszahlung ? '<span class="text-emerald-600 bg-emerald-50 text-xs font-bold px-2 py-0.5 rounded">Ja</span>' : '<span class="text-gray-400 text-xs px-2 py-0.5 rounded">Nein</span>'}</td>
+          </tr>`;
+        }).join("");
+        if (window.lucide) window.lucide.createIcons();
+      };
+
+      el("adminLohnPrevBtn").addEventListener("click", () => {
+        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
+        if (--m === 0) { m = 12; y--; }
+        STATE.adminMonthStr = `${y}-${String(m).padStart(2,"0")}`;
+        renderAdminDashboard();
+      });
+      el("adminLohnNextBtn").addEventListener("click", () => {
+        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
+        if (++m === 13) { m = 1; y++; }
+        STATE.adminMonthStr = `${y}-${String(m).padStart(2,"0")}`;
+        renderAdminDashboard();
+      });
+
+      // --- Jahresübersicht Tab ---
+      const renderAdminJahr = () => {
+        const sm = STATE.einstellungen.start_monat || 3;
+        const sy = STATE.adminYearStart;
+        const months = getFiscalMonths(sm, sy);
+        const endM = months[months.length - 1];
+        const [endY, endMo] = endM.split('-');
+        el("adminSelectedYearLabel").textContent = `${MONTHS_DE[sm-1]} ${sy} – ${MONTHS_DE_SHORT[parseInt(endMo)-1]} ${endY}`;
+
+        el("jahrTableHead").innerHTML =
+          `<th class="p-3 sticky left-0 bg-gray-50 z-10 border-r border-gray-100 min-w-[140px]">Name</th>` +
+          months.map(m => {
+            const {year:y, month:mo} = { year: m.split('-')[0], month: parseInt(m.split('-')[1]) };
+            return `<th class="p-3 font-semibold">${MONTHS_DE_SHORT[mo-1]}<br><span class="font-normal">${y}</span></th>`;
+          }).join('') +
+          `<th class="p-3 bg-teal-50 text-teal-700 font-bold">Ist</th><th class="p-3 bg-gray-100">Soll</th><th class="p-3 bg-gray-100">Diff.</th>`;
+
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const yearGoal = goal * 12;
+        const now = new Date().toISOString().substring(0, 7);
+
+        const html = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map(ul => {
+          let yearTotal = 0;
+          let row = `<td class="p-3 sticky left-0 bg-white z-10 border-r border-gray-100 font-bold text-gray-800">
+            ${ul.name}${ul.pausiert ? ' <span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1 py-0.5 rounded uppercase">Pausiert</span>' : ''}
+          </td>`;
+          months.forEach(m => {
+            const hrs = STATE.entries.filter(e => e.monat === m && e.uebungsleiter_id === ul.id).reduce((s, e) => s + e.stunden, 0);
+            if (m <= now) yearTotal += hrs;
+            const isFreigegeben = hrs >= goal || (STATE.freigaben[m] && STATE.freigaben[m][ul.id]);
+            let cls = m > now ? "text-gray-200 bg-gray-50" : hrs === 0 ? "text-gray-300" : hrs >= goal ? "text-emerald-600 font-bold bg-emerald-50" : isFreigegeben ? "text-primary font-bold" : "text-gray-700";
+            row += `<td class="p-3 font-mono ${cls}">${m <= now ? fmtH(hrs) : '–'}</td>`;
+          });
+          const diff = yearTotal - yearGoal;
+          const diffStr = (diff >= 0 ? "+" : "") + fmtH(diff).replace('.', ',');
+          row += `<td class="p-3 font-mono font-bold text-teal-700 bg-teal-50">${fmtH(yearTotal)}</td>`;
+          row += `<td class="p-3 font-mono text-gray-500 bg-gray-50">${fmtH(yearGoal)}</td>`;
+          row += `<td class="p-3 font-mono font-bold ${diff >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}">${diffStr}</td>`;
+          return `<tr>${row}</tr>`;
+        }).join("");
+        el("jahrTableBody").innerHTML = html;
+      };
+
+      // --- Verwaltung Tab ---
+      const renderAdminVerwaltung = () => {
+        const list = el("adminVerwaltungList");
+        if (STATE.ulList.length === 0) {
+          list.innerHTML = '<p class="text-center text-sm text-secondary p-8">Noch keine Übungsleiter angelegt.</p>';
+          return;
+        }
+        list.innerHTML = STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).map(ul => `
+          <div class="p-4 hover:bg-gray-50 flex justify-between items-center transition cursor-pointer" onclick="window.adminEditUser('${ul.id}')">
+            <div>
+              <div class="font-bold text-gray-800 flex items-center gap-2 flex-wrap">
+                ${ul.name}
+                <span class="text-xs font-normal text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded">PIN: ${ul.pin}</span>
+                ${ul.pausiert ? '<span class="text-[10px] font-bold text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded uppercase">Pausiert</span>' : '<span class="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded uppercase">Aktiv</span>'}
+              </div>
+              <div class="text-[10px] uppercase text-secondary font-bold tracking-wider mt-0.5">${ul.einrichtung}</div>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300"></i>
+          </div>`).join("");
+      };
+
+      // ============================================================
+      // ADMIN ACTIONS
+      // ============================================================
+      el("adminPrevMonthBtn").addEventListener("click", () => {
+        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
+        if (--m === 0) { m = 12; y--; }
+        STATE.adminMonthStr = `${y}-${String(m).padStart(2,"0")}`;
+        renderAdminDashboard();
+      });
+      el("adminNextMonthBtn").addEventListener("click", () => {
+        let [y, m] = STATE.adminMonthStr.split("-").map(Number);
+        if (++m === 13) { m = 1; y++; }
+        STATE.adminMonthStr = `${y}-${String(m).padStart(2,"0")}`;
+        renderAdminDashboard();
+      });
+      el("adminPrevYearBtn").addEventListener("click", () => { STATE.adminYearStart--; renderAdminDashboard(); });
+      el("adminNextYearBtn").addEventListener("click", () => { STATE.adminYearStart++; renderAdminDashboard(); });
+
+      window.adminToggleKulanz = async (ulId, checked) => {
+        await API.setFreigabe(STATE.adminMonthStr, ulId, checked);
+        STATE.freigaben = await API.getFreigaben();
+        renderAdminDashboard();
+        showNotification(checked ? "Auszahlung genehmigt" : "Auszahlung widerrufen");
+      };
+
+      window.adminDeleteEntry = async (entryId) => {
+        if (!confirm("Eintrag sicher löschen?")) return;
+        await API.deleteEintrag(entryId);
+        STATE.entries = await API.getEintraege();
+        renderAdminDashboard();
+        showNotification("Eintrag gelöscht");
+      };
+
+      window.adminEditEntry = (entryId) => {
+        const entry = STATE.entries.find(e => e.id === entryId);
+        if (!entry) return;
+        el("entryModalId").value = entryId;
+        el("entryModalDatum").value = entry.datum;
+        el("entryModalVon").value = entry.von;
+        el("entryModalBis").value = entry.bis;
+        el("entryEditModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+      };
+      window.closeEntryModal = () => el("entryEditModal").classList.add("hidden");
+      window.saveEntryModal = async () => {
+        const id = el("entryModalId").value;
+        const datum = el("entryModalDatum").value;
+        const von = el("entryModalVon").value;
+        const bis = el("entryModalBis").value;
+        const stunden = calcHours(von, bis);
+        if (!datum || !von || !bis || stunden <= 0) return;
+        await API.updateEintrag(id, { datum, monat: datum.substring(0, 7), von, bis, stunden });
+        STATE.entries = await API.getEintraege();
+        window.closeEntryModal();
+        renderAdminDashboard();
+        showNotification("Eintrag aktualisiert");
+      };
+
+      // Admin Add Entry
+      el("adminAddEntryBtn").addEventListener("click", () => {
+        const userSel = el("adminAddEntryUser");
+        userSel.innerHTML = STATE.ulList.sort((a,b) => a.name.localeCompare(b.name)).map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+        const today = new Date().toISOString().substring(0, 10);
+        el("adminAddEntryDatum").value = today;
+        el("adminAddEntryModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+      });
+      window.closeAdminAddModal = () => el("adminAddEntryModal").classList.add("hidden");
+      window.saveAdminAddEntry = async () => {
+        const uid = el("adminAddEntryUser").value;
+        const datum = el("adminAddEntryDatum").value;
+        const von = el("adminAddEntryVon").value;
+        const bis = el("adminAddEntryBis").value;
+        const stunden = calcHours(von, bis);
+        if (!uid || !datum || !von || !bis || stunden <= 0) return;
+        await API.addEintrag({ uebungsleiter_id: uid, datum, monat: datum.substring(0, 7), von, bis, stunden });
+        STATE.entries = await API.getEintraege();
+        window.closeAdminAddModal();
+        renderAdminDashboard();
+        showNotification("Eintrag hinzugefügt");
+      };
+
+      // User Management
+      window.adminEditUser = (id) => {
+        const user = STATE.ulList.find(u => u.id === id);
+        el("ueModalId").value = id || "";
+        el("ueModalName").value = user ? user.name : "";
+        el("ueModalEinrichtung").value = user ? user.einrichtung || "" : "";
+        el("ueModalPin").value = user ? user.pin || "" : "";
+        el("ueModalTelefon").value = user ? user.telefon || "" : "";
+        el("ueModalEmail").value = user ? user.email || "" : "";
+        el("ueModalStatus").value = user && user.pausiert ? "pausiert" : "aktiv";
+        el("ueModalAdresse").value = user ? user.adresse || "" : "";
+        el("ueModalNotizen").value = user ? user.notizen || "" : "";
+        el("ueModalTitle").textContent = user ? "Übungsleiter bearbeiten" : "Neuen Ü-Leiter anlegen";
+        el("ueModalDeleteBtn").classList.toggle("hidden", !user);
+        el("ueModalErrorName").classList.add("hidden");
+        el("userEditModal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+      };
+      window.closeUserModal = () => el("userEditModal").classList.add("hidden");
+      window.saveUserModal = async () => {
+        const id = el("ueModalId").value;
+        const name = el("ueModalName").value.trim();
+        const pin = el("ueModalPin").value.trim();
+        if (!name || !pin) { el("ueModalErrorName").classList.remove("hidden"); return; }
+        if (!/^\d{4}$/.test(pin)) { el("ueModalErrorName").textContent = "PIN muss 4 Ziffern haben!"; el("ueModalErrorName").classList.remove("hidden"); return; }
+        const data = {
+          name, einrichtung: el("ueModalEinrichtung").value.trim(), pin,
+          telefon: el("ueModalTelefon").value.trim(), email: el("ueModalEmail").value.trim(),
+          pausiert: el("ueModalStatus").value === "pausiert",
+          adresse: el("ueModalAdresse").value.trim(), notizen: el("ueModalNotizen").value.trim(),
+        };
+        if (id) await API.updateUebungsleiter(id, data);
+        else await API.addUebungsleiter(data);
+        STATE.ulList = await API.getUebungsleiterList();
+        window.closeUserModal();
+        renderAdminDashboard();
+        showNotification("Übungsleiter gespeichert");
+      };
+      window.deleteUserModal = async () => {
+        if (!confirm("Übungsleiter wirklich löschen? Alle Einträge bleiben erhalten.")) return;
+        const id = el("ueModalId").value;
+        await API.deleteUebungsleiter(id);
+        STATE.ulList = await API.getUebungsleiterList();
+        window.closeUserModal();
+        renderAdminDashboard();
+        showNotification("Übungsleiter gelöscht");
+      };
+
+      // ============================================================
+      // CSV EXPORTS
+      // ============================================================
+      const downloadCsv = (content, filename) => {
+        const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+      };
+
+      const clean = (s) => `"${(s || "").replace(/"/g, '""')}"`;
+
+      el("exportCsvBtnLohn").addEventListener("click", () => {
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const monthEntries = STATE.entries.filter(e => e.monat === STATE.adminMonthStr);
+        let csv = "Vorname;Name;Klinik;Gesamtstunden;Auszahlung\n";
+        STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).forEach(ul => {
+          const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s, e) => s + e.stunden, 0);
+          const isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+          if (!isFreigegeben) return;
+          const parts = ul.name.split(" "); const last = parts.pop(); const first = parts.join(" ");
+          csv += `${clean(first)};${clean(last)};${clean(ul.einrichtung)};${fmtH(hrs).replace(".", ",")};Ja\n`;
+        });
+        downloadCsv(csv, `MSBW_Lohnbuero_${STATE.adminMonthStr}.csv`);
+        showNotification("Export Lohnbüro erstellt");
+      });
+
+      el("exportCsvBtnAlle").addEventListener("click", () => {
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const monthEntries = STATE.entries.filter(e => e.monat === STATE.adminMonthStr);
+        let csv = "Einrichtung;Vorname;Name;Status;Gesamtstunden\n";
+        STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).forEach(ul => {
+          const hrs = monthEntries.filter(e => e.uebungsleiter_id === ul.id).reduce((s, e) => s + e.stunden, 0);
+          const isFreigegeben = hrs >= goal || (STATE.freigaben[STATE.adminMonthStr] && STATE.freigaben[STATE.adminMonthStr][ul.id]);
+          const parts = ul.name.split(" "); const last = parts.pop(); const first = parts.join(" ");
+          const status = hrs >= goal ? "Ziel erreicht" : isFreigegeben ? "Zugeständnis" : "Nicht erreicht";
+          csv += `${clean(ul.einrichtung)};${clean(first)};${clean(last)};${status};${fmtH(hrs).replace(".", ",")}\n`;
+        });
+        downloadCsv(csv, `MSBW_Alle_${STATE.adminMonthStr}.csv`);
+        showNotification("Export Alle erstellt");
+      });
+
+      el("exportCsvBtnJahr").addEventListener("click", () => {
+        const sm = STATE.einstellungen.start_monat || 3;
+        const months = getFiscalMonths(sm, STATE.adminYearStart);
+        const goal = STATE.einstellungen.pflicht_stunden;
+        const yearGoal = goal * 12;
+        let csv = `Vorname;Name;Einrichtung;${months.map(m => { const mo = parseInt(m.split('-')[1]); return MONTHS_DE_SHORT[mo-1]+' '+m.split('-')[0]; }).join(";")};Soll Std. Jahr;Ist Std. Jahr;Differenz\n`;
+        STATE.ulList.sort((a, b) => a.name.localeCompare(b.name)).forEach(ul => {
+          const parts = ul.name.split(" "); const last = parts.pop(); const first = parts.join(" ");
+          let row = `${clean(first)};${clean(last)};${clean(ul.einrichtung)};`;
+          let yearTotal = 0;
+          months.forEach(m => {
+            const hrs = STATE.entries.filter(e => e.monat === m && e.uebungsleiter_id === ul.id).reduce((s, e) => s + e.stunden, 0);
+            yearTotal += hrs;
+            row += `${fmtH(hrs).replace(".", ",")};`;
+          });
+          const diff = yearTotal - yearGoal;
+          row += `${fmtH(yearGoal).replace(".", ",")};${fmtH(yearTotal).replace(".", ",")};${(diff >= 0 ? "+" : "")}${fmtH(diff).replace(".", ",")}\n`;
+          csv += row;
+        });
+        downloadCsv(csv, `MSBW_Jahresuebersicht_${STATE.adminYearStart}.csv`);
+        showNotification("Jahresexport erstellt");
+      });
+
+      // ============================================================
+      // BOOT
+      // ============================================================
+      window.onload = () => {
+        if (window.lucide) window.lucide.createIcons();
+        setTimeout(initApp, 400);
+      };
+    </script>
+  </body>
+</html>
