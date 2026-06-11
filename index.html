@@ -1058,67 +1058,6 @@
         } catch(e) { showLoadingError("Fehler beim Laden: " + e.message); }
       };
 
-      // ---- Setup ----
-      // Setup entfernt
-      if (false) {
-        const echteUL = [
-            {name:"Abdoul Zampaligre", einrichtung:"BG Klinik Tübingen", pin:"4757"},
-            {name:"Abdullah Göcmen", einrichtung:"Kliniken Landkreis Heidenheim gGmbH", pin:"9240"},
-            {name:"Aicha Seddiki/Cheklal", einrichtung:"Universitätsklinikum Freiburg", pin:"5081"},
-            {name:"Aicha Outaggarts", einrichtung:"Kreisklinik Reutlingen", pin:"1096"},
-            {name:"Ajla Dendic", einrichtung:"Klinikum Stuttgart - Bad Cannstatt", pin:"6583"},
-            {name:"Aysel Özdemir-Alkevli", einrichtung:"Klinikum Stuttgart - Katharinen + Olgahospital", pin:"3142"},
-            {name:"Burcu Yildirim", einrichtung:"Klinikum Esslingen", pin:"7821"},
-            {name:"Büsra Aktas", einrichtung:"Klinikverbund Südwest Krankenhaus Leonberg", pin:"2934"},
-            {name:"Dogan Cimen", einrichtung:"Medizin Campus Bodensee - Friedrichshafen", pin:"8467"},
-            {name:"Esra Kilic", einrichtung:"ZFP Wiesloch", pin:"5319"},
-            {name:"Fatima Stiyel", einrichtung:"Universitätsklinikum Freiburg", pin:"6748"},
-            {name:"Filiz Eroglu", einrichtung:"Universitätsklinikum Freiburg", pin:"3825"},
-            {name:"Gamze Sahin", einrichtung:"Uniklinikum Ulm", pin:"9173"},
-            {name:"Gülsever Yilmazer", einrichtung:"Rottweil Helios Klinik", pin:"4562"},
-            {name:"Halime Kahraman", einrichtung:"Regionale Kliniken Holding RKH GmbH", pin:"7036"},
-            {name:"Halis Kamiloglu", einrichtung:"Schwarzwald-Baar-Klinikum", pin:"2481"},
-            {name:"Hanife Yazici", einrichtung:"Schwarzwald-Baar-Klinikum", pin:"8953"},
-            {name:"Hatice Özbal", einrichtung:"Uniklinikum Mannheim", pin:"1647"},
-            {name:"Hatice Özdemir", einrichtung:"Regionale Kliniken Holding RKH GmbH", pin:"5284"},
-            {name:"Hazem El Gafari", einrichtung:"Universitätsklinikum Tübingen", pin:"3719"},
-            {name:"Ismet Harbi", einrichtung:"RKH Kliniken Ludwigsburg-Bietigheim", pin:"6392"},
-            {name:"Jaaffar Dahasse", einrichtung:"Klinikum Stuttgart - Katharinen + Olgahospital", pin:"8175"},
-            {name:"Jwanita Khatib-Saleh", einrichtung:"Robert-Bosch-Krankenhaus", pin:"4836"},
-            {name:"Kaan Özbal", einrichtung:"Zentralinstitut für Seelische Gesundheit", pin:"2563"},
-            {name:"Mahdy Shaltout", einrichtung:"Universitätsklinikum Tübingen", pin:"7418"},
-            {name:"Momena Almazloum", einrichtung:"Universitätsklinikum Freiburg", pin:"9254"},
-            {name:"Muammer Ermis", einrichtung:"Klinikum Aalen", pin:"3687"},
-            {name:"Musa Güven", einrichtung:"Kreiskliniken Winnenden", pin:"6142"},
-            {name:"Mustafa Sary", einrichtung:"Kreisklinik Reutlingen", pin:"8793"},
-            {name:"Nawal Bertoune", einrichtung:"ZI Mannheim", pin:"1958"},
-            {name:"Nazan Zorbulut", einrichtung:"Ortenau Klinikum Lahr-Ettenheim", pin:"5427"},
-            {name:"Nebahat Delalic", einrichtung:"Diakonissenkrankenhaus Mannheim", pin:"7361"},
-            {name:"Nermina Zolj-Sabanovic", einrichtung:"Furtbachklinik", pin:"2849"},
-            {name:"Nizama Brigiz", einrichtung:"Uniklinikum Mannheim", pin:"9516"},
-            {name:"Nurgül Süral", einrichtung:"Kliniken Landkreis Sigmaringen GmbH", pin:"4273"},
-            {name:"Özcan Kalkat", einrichtung:"Kliniken Landkreis Heidenheim gGmbH", pin:"6834"},
-            {name:"Rauia Jahdari", einrichtung:"Universitätsklinikum Freiburg", pin:"5056"},
-            {name:"Reem Ghanem", einrichtung:"Klinikum Mittelbaden - Baden Baden", pin:"1110"},
-            {name:"Sevim Düzelten", einrichtung:"Universitätsklinikum Tübingen", pin:"6439"},
-            {name:"Sükran Cihan", einrichtung:"Klinikverbund Südwest Böblingen", pin:"5902"},
-            {name:"Tahsin Kazan", einrichtung:"Robert-Bosch-Krankenhaus", pin:"6081"},
-            {name:"Tuncay Gündüz", einrichtung:"SLK Plattenwald", pin:"1576"},
-            {name:"Turan Kilic", einrichtung:"GRN Schwetzingen", pin:"5367"},
-            {name:"Wafia Mohamed", einrichtung:"Universitätsklinikum Tübingen", pin:"8770"},
-            {name:"Zeynel Zorbulut", einrichtung:"Ortenau Klinikum Lahr-Ettenheim", pin:"6800"},
-            {name:"Tino Vukalic", einrichtung:"Rems-Murr-Klinikum Winnenden", pin:"1561"},
-            {name:"Mihrap Demir", einrichtung:"RKH Kliniken Ludwigsburg-Bietigheim", pin:"3947"},
-            {name:"Nese Yilmaz", einrichtung:"Stauferklinikum Schwäbisch-Gmünd", pin:"7283"},
-            {name:"Fatma Özen", einrichtung:"Klinikum Stuttgart - Bad Cannstatt", pin:"4619"},
-          ];
-          for (const ul of echteUL) {
-            await API.addUebungsleiter({ name: ul.name, einrichtung: ul.einrichtung, pin: ul.pin, aktiv: true, pausiert: false, telefon: "", email: "", adresse: "", notizen: "" });
-          }
-        }
-
-      }
-
       // ---- Role Selection ----
       el("navUlLoginBtn").addEventListener("click", () => { el("ulLoginName").value = ""; el("ulLoginPin").value = ""; el("ulLoginError").classList.add("hidden"); switchView("ulLoginView"); });
       el("navAdminLoginBtn").addEventListener("click", () => { el("adminLoginPin").value = ""; el("adminLoginError").classList.add("hidden"); switchView("adminLoginView"); });
